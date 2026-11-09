@@ -24,6 +24,7 @@ $text = [IO.File]::ReadAllText($catalog) -replace '"Source":\s*"[^"]*?(players\\
 if ($text -match '[A-Za-z]:\\\\') { throw 'An absolute path is still in the template catalog.' }
 
 Copy-Item "$studio\packaging\README.txt", "$studio\packaging\THIRD-PARTY-NOTICES.txt" $out
+Copy-Item "$studio\LICENSE" "$out\LICENSE.txt"
 $lic = New-Item -ItemType Directory -Force "$out\licenses"
 $nuget = Join-Path $env:USERPROFILE '.nuget\packages'
 $dotnet = Join-Path $env:ProgramFiles 'dotnet'
