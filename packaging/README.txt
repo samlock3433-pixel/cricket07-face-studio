@@ -49,5 +49,5 @@ Good to know
   - Face textures larger than 256 x 256 work in the tool; check them in your game before sharing a face.
   - The tool checks every saved model by reading it back, but always test a face in the game.
 
-Credits and licences: see THIRD-PARTY-NOTICES.txt. Face Studio is a fan-made tool, not affiliated with
+Licence: MIT (LICENSE.txt). Credits and third-party licences: see THIRD-PARTY-NOTICES.txt. Face Studio is a fan-made tool, not affiliated with
 Electronic Arts or HB Studios.
