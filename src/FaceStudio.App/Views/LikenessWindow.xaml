@@ -1,0 +1,59 @@
+<Window x:Class="Cricket07.FaceStudio.Views.LikenessWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:Cricket07.FaceStudio.Views"
+        Title="Likeness from photos — fit the head shape" Width="1320" Height="900" MinWidth="980" MinHeight="640"
+        WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="12" Background="White">
+    <ScrollViewer DockPanel.Dock="Right" Width="300" VerticalScrollBarVisibility="Auto" Margin="12,0,0,0">
+      <StackPanel>
+        <TextBlock Text="Photos" FontSize="20" Margin="0,0,0,6"/>
+        <WrapPanel>
+          <Button Content="Load front photo…" Click="OnLoadPhoto" Tag="front" Padding="10,6" Margin="0,0,8,8"/>
+          <Button Content="Load side photo…" Click="OnLoadPhoto" Tag="side" Padding="10,6" Margin="0,0,8,8"/>
+          <Button Content="Auto-place front markers" Click="OnAutoPlace" Padding="10,6" Margin="0,0,8,8"
+            ToolTip="Finds the face in the front photo (MediaPipe face landmarks) and places the front markers. Runs when a front photo is loaded."/>
+        </WrapPanel>
+        <TextBlock TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,10"
+          Text="Use a straight-on front photo and a true profile (either side), neutral expression, mouth closed. Front markers are placed automatically; check them. Side markers: drag each one onto the same feature; faded markers are not used until you move them. On a bearded face, put chin and jaw markers where the chin and jaw bone are, not on the outline of the beard. Hover a marker to see its name. If a marker on the head sits on the wrong spot, drag it there too."/>
+        <TextBlock Text="Fit" FontSize="20" Margin="0,6,0,6"/>
+        <TextBlock Text="Strength"/><Slider x:Name="Strength" Minimum="0" Maximum="1.2" Value="1" ValueChanged="OnSetting"/>
+        <CheckBox x:Name="Symmetric" Content="Symmetric (recommended)" IsChecked="True" Click="OnOption" Margin="0,6,0,0"
+          ToolTip="Averages left and right, so a slightly turned photo does not make the face lopsided."/>
+        <CheckBox x:Name="ShowResult" Content="Show fitted shape" IsChecked="False" Click="OnOption" Margin="0,6,0,0"
+          ToolTip="Head views show the fitted shape. Turn off to adjust head markers."/>
+        <TextBlock Text="Landmarks" FontSize="20" Margin="0,16,0,6"/>
+        <TextBlock x:Name="Legend" TextWrapping="Wrap" Foreground="#333" FontSize="12"/>
+        <WrapPanel Margin="0,16,0,0">
+          <Button Content="Reset markers" Click="OnReset" Padding="10,6" Margin="0,0,8,8"/>
+          <Button Content="Apply to head" Click="OnApply" Background="#234E74" Foreground="White" Padding="10,6" Margin="0,0,8,8"/>
+          <Button Content="Cancel" IsCancel="True" Padding="10,6" Margin="0,0,8,8"/>
+        </WrapPanel>
+      </StackPanel>
+    </ScrollViewer>
+    <TextBlock x:Name="Status" DockPanel.Dock="Bottom" TextWrapping="Wrap" Margin="0,10,0,0"
+      Text="Load a front and a side photo. The fit updates as you move markers; Apply makes it one undo step in the editor."/>
+    <Grid>
+      <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions>
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="10"/><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions>
+      <TextBlock Text="Front photo" FontWeight="SemiBold"/>
+      <TextBlock Grid.Column="2" Text="Head, front" FontWeight="SemiBold"/>
+      <TextBlock Grid.Row="3" Text="Side photo" FontWeight="SemiBold"/>
+      <TextBlock Grid.Row="3" Grid.Column="2" Text="Head, side" FontWeight="SemiBold"/>
+      <Border Grid.Row="1" Background="#20242E"><Grid>
+        <v:ZoomPanel x:Name="FrontPhotoZoom"><Grid><Image x:Name="FrontPhoto" Stretch="None"/><Canvas x:Name="FrontPhotoCanvas"/></Grid></v:ZoomPanel>
+        <TextBlock x:Name="FrontHint" Text="Load a front photo" Foreground="#AAB" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+      </Grid></Border>
+      <Border Grid.Row="1" Grid.Column="2" Background="#20242E">
+        <v:ZoomPanel x:Name="FrontHeadZoom"><Grid x:Name="FrontHeadHost" Width="520" Height="520"><Canvas x:Name="FrontHeadCanvas"/></Grid></v:ZoomPanel>
+      </Border>
+      <Border Grid.Row="4" Background="#20242E"><Grid>
+        <v:ZoomPanel x:Name="SidePhotoZoom"><Grid><Image x:Name="SidePhoto" Stretch="None"/><Canvas x:Name="SidePhotoCanvas"/></Grid></v:ZoomPanel>
+        <TextBlock x:Name="SideHint" Text="Load a side photo" Foreground="#AAB" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+      </Grid></Border>
+      <Border Grid.Row="4" Grid.Column="2" Background="#20242E">
+        <v:ZoomPanel x:Name="SideHeadZoom"><Grid x:Name="SideHeadHost" Width="520" Height="520"><Canvas x:Name="SideHeadCanvas"/></Grid></v:ZoomPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</Window>

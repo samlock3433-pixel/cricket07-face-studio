@@ -1,0 +1,7 @@
+otools 0.179
+this version might be unstable
+
+written by Dmitri
+https://github.com/FIFAM-Mods/otools
+Quick guide:
+https://github.com/FIFAM-Mods/otools/wiki

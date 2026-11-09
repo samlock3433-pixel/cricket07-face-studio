@@ -1,0 +1,18 @@
+# Build output
+bin/
+obj/
+dist/
+release/
+*.user
+.vs/
+
+# Test runs and working folders (created by the app and the smoke test)
+work/
+workspace/
+TestResults/
+
+# Machine-specific: a scan of the author's game install (rebuild locally, see README)
+data/
+
+# Duplicate of the unpacked vendor/otools folder
+vendor/otools-release-0179.zip

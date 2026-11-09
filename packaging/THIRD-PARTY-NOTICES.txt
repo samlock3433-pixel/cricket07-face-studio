@@ -1,0 +1,31 @@
+Face Studio for EA Cricket 07 - third-party components
+========================================================
+
+Face Studio bundles the following components. Their licence texts are in the "licenses" folder.
+
+OTools 0.179 (tools\otools)
+  Converts Cricket 07 .o models to and from glTF.
+  Copyright (c) 2020-2025 Dmitri. MIT License - licenses\OTools-LICENSE.txt
+
+MediaPipe Face Mesh V2 landmark model (tools\facemesh\face_landmarks.onnx)
+  Google MediaPipe face landmark network converted to ONNX (no retraining). Used only to pre-place the
+  front-photo markers in "Likeness from photos".
+  Weights (c) Google LLC. Apache License 2.0 - licenses\Apache-2.0.txt
+  Source: https://huggingface.co/naklitechie/face-landmarks-onnx (see tools\facemesh\README.md)
+
+ONNX Runtime 1.20.1 (Microsoft.ML.OnnxRuntime.dll, onnxruntime*.dll)
+  Copyright (c) Microsoft Corporation. MIT License - licenses\OnnxRuntime-LICENSE.txt
+  Its own third-party notices: licenses\OnnxRuntime-ThirdPartyNotices.txt
+
+Helix Toolkit for WPF 2.27.0 (HelixToolkit.Wpf.dll)
+  Copyright (c) Helix Toolkit contributors. MIT License - licenses\HelixToolkit-LICENSE.txt
+
+.NET 8 runtime and WPF (the remaining .dll files, included so no .NET install is needed)
+  Copyright (c) .NET Foundation and Contributors. MIT License - licenses\DotNet-LICENSE.txt
+  Its own third-party notices: licenses\DotNet-ThirdPartyNotices.txt
+
+Game assets
+  The "templates" folder holds stock head and hair models and textures from EA SPORTS Cricket 07, included
+  as starting points for making faces. They are the property of Electronic Arts. Face Studio is a fan-made
+  modding tool, not made, endorsed or supported by Electronic Arts or HB Studios. Use it with a copy of the
+  game you own.

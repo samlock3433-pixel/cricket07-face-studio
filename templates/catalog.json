@@ -1,0 +1,222 @@
+﻿[
+    {
+        "Name":  "Stock head 1188",
+        "Category":  "Head",
+        "Model":  "heads/1188/model.o",
+        "Texture":  "heads/1188/textures.fsh",
+        "Source":  "players\\heads\\1188.big",
+        "Sha256":  "0FEDED99CBF25D33271494ABDB83E4CFB036F7D9A41EE5A6F4AB6547ED5AD392",
+        "HasHair":  false
+    },
+    {
+        "Name":  "Stock head 10942",
+        "Category":  "Head",
+        "Model":  "heads/10942/model.o",
+        "Texture":  "heads/10942/textures.fsh",
+        "Source":  "players\\heads\\10942.big",
+        "Sha256":  "1B702EFE517D70C60DFE8123AAB7F773BBA08D1BDEB6DF258465A9BCA4DF08AE",
+        "HasHair":  false
+    },
+    {
+        "Name":  "Stock head 21449",
+        "Category":  "Head",
+        "Model":  "heads/21449/model.o",
+        "Texture":  "heads/21449/textures.fsh",
+        "Source":  "players\\heads\\21449.big",
+        "Sha256":  "CB5EF6400500CFD74CD76AEC9473551401780904E8912705403C74E5C87640B8",
+        "HasHair":  false
+    },
+    {
+        "Name":  "Stock head 10407",
+        "Category":  "Head",
+        "Model":  "heads/10407/model.o",
+        "Texture":  "heads/10407/textures.fsh",
+        "Source":  "players\\heads\\10407.big",
+        "Sha256":  "70D31A48F8CCDBE77F0B89F7BE7E767EAFFBA21868F1AD2CC53F6C6E24931788",
+        "HasHair":  false
+    },
+    {
+        "Name":  "Stock head 14360 · with hair",
+        "Category":  "Head",
+        "Model":  "heads/14360/model.o",
+        "Texture":  "heads/14360/textures.fsh",
+        "Source":  "players\\heads\\14360.big",
+        "Sha256":  "18C960653A895EDC3F085F4232194E150B5E83A7DCBD8492D3EEDEF59A5EBAFD",
+        "HasHair":  true
+    },
+    {
+        "Name":  "Stock head 1536 · with hair",
+        "Category":  "Head",
+        "Model":  "heads/1536/model.o",
+        "Texture":  "heads/1536/textures.fsh",
+        "Source":  "players\\heads\\1536.big",
+        "Sha256":  "6E2CD81169BEF8CCF237FB85A729C11F31B06147B2A993BBA1D8896223C34482",
+        "HasHair":  true
+    },
+    {
+        "Name":  "Stock head 23525 · with hair",
+        "Category":  "Head",
+        "Model":  "heads/23525/model.o",
+        "Texture":  "heads/23525/textures.fsh",
+        "Source":  "players\\heads\\23525.big",
+        "Sha256":  "372BDF4C2178063996A60591110B2FC59543F3903F8CBA00051B90B9615D3FB1",
+        "HasHair":  true
+    },
+    {
+        "Name":  "Stock head 28116 · with hair",
+        "Category":  "Head",
+        "Model":  "heads/28116/model.o",
+        "Texture":  "heads/28116/textures.fsh",
+        "Source":  "players\\heads\\28116.big",
+        "Sha256":  "FB826CD37E42686F4F94A09E5EFCEBE56E4D4D2B046897C1C8CC18AD240EB4F6",
+        "HasHair":  true
+    },
+    {
+        "Name":  "Stock head 6059 · with hair",
+        "Category":  "Head",
+        "Model":  "heads/6059/model.o",
+        "Texture":  "heads/6059/textures.fsh",
+        "Source":  "players\\heads\\6059.big",
+        "Sha256":  "28CC9B6D0F3953743D9BBB437CE9438D837122A25B5F0AADB4DAAF229C49D304",
+        "HasHair":  true
+    },
+    {
+        "Name":  "Stock head 8881 · with hair",
+        "Category":  "Head",
+        "Model":  "heads/8881/model.o",
+        "Texture":  "heads/8881/textures.fsh",
+        "Source":  "players\\heads\\8881.big",
+        "Sha256":  "F96581CB508A7B1CC534806B8ECBC3CE74CA22CD517F64C117FD76F0B895E394",
+        "HasHair":  true
+    },
+    {
+        "Name":  "Stock head 15484 · with hair fringe",
+        "Category":  "Head",
+        "Model":  "heads/15484/model.o",
+        "Texture":  "heads/15484/textures.fsh",
+        "Source":  "players\\heads\\15484.big",
+        "Sha256":  "F7C4E3A290CAD58848DBBA69D4962405F49C63109C6E5BD90A2B03A3B8E63731",
+        "HasHair":  true
+    },
+    {
+        "Name":  "Stock head 9324 · with hair fringe",
+        "Category":  "Head",
+        "Model":  "heads/9324/model.o",
+        "Texture":  "heads/9324/textures.fsh",
+        "Source":  "players\\heads\\9324.big",
+        "Sha256":  "9A973B41FA727E984D8EB06EC0552E82E07B661F700328DFB2FEC2C658EB9E88",
+        "HasHair":  true
+    },
+    {
+        "Name":  "Hair hhraa_a",
+        "Category":  "Hair",
+        "Model":  "hair/hhraa_a.o",
+        "Texture":  null,
+        "Source":  "players\\heads\\gameface\\hhraa_a.o",
+        "Sha256":  "E0628F33EA6CE034052D4F0E8E89FA4DC7078F4DE16B76CE95B35EA181F4387F"
+    },
+    {
+        "Name":  "Hair hhrab_a",
+        "Category":  "Hair",
+        "Model":  "hair/hhrab_a.o",
+        "Texture":  null,
+        "Source":  "players\\heads\\gameface\\hhrab_a.o",
+        "Sha256":  "12580121C94878946CA2824E425E6C5D9CF1BCA7BF8C7E9078D6F8CF149C58A0"
+    },
+    {
+        "Name":  "Hair hhrac_a",
+        "Category":  "Hair",
+        "Model":  "hair/hhrac_a.o",
+        "Texture":  null,
+        "Source":  "players\\heads\\gameface\\hhrac_a.o",
+        "Sha256":  "D340ACDAFA7579AD50A40094D36A2ED91BA7F2BCC02E9327855DEF38B1EF1C40"
+    },
+    {
+        "Name":  "Hair hhrad_a",
+        "Category":  "Hair",
+        "Model":  "hair/hhrad_a.o",
+        "Texture":  null,
+        "Source":  "players\\heads\\gameface\\hhrad_a.o",
+        "Sha256":  "C60F89122632BF1F08F5FD5B6461AEB4E3AABB59387E13E46D4974FDE956C593"
+    },
+    {
+        "Name":  "Hair hhrae_a",
+        "Category":  "Hair",
+        "Model":  "hair/hhrae_a.o",
+        "Texture":  null,
+        "Source":  "players\\heads\\gameface\\hhrae_a.o",
+        "Sha256":  "20F3F97429D341608561BAA472B3B39CA7AFE3D629DEB83BE511ADF8EC5F62B8"
+    },
+    {
+        "Name":  "Hair hhraf_a",
+        "Category":  "Hair",
+        "Model":  "hair/hhraf_a.o",
+        "Texture":  null,
+        "Source":  "players\\heads\\gameface\\hhraf_a.o",
+        "Sha256":  "F7C39E5EB0E2206EE9A7BBEA6905899DD0CA32F39DD9223EBC2CED80AFF0F102"
+    },
+    {
+        "Name":  "Hair hhrag_a",
+        "Category":  "Hair",
+        "Model":  "hair/hhrag_a.o",
+        "Texture":  null,
+        "Source":  "players\\heads\\gameface\\hhrag_a.o",
+        "Sha256":  "5A57C19054F53F88C90853E7A3EC3B94551F9FE1E64A33A80C0222D751274C0D"
+    },
+    {
+        "Name":  "Hair hhrah_a",
+        "Category":  "Hair",
+        "Model":  "hair/hhrah_a.o",
+        "Texture":  null,
+        "Source":  "players\\heads\\gameface\\hhrah_a.o",
+        "Sha256":  "EB2C81DBFDE28B2E78AAAAD48E6B595F83592DCA4A8088E510A858355D20A0DF"
+    },
+    {
+        "Name":  "Hair hhrai_a",
+        "Category":  "Hair",
+        "Model":  "hair/hhrai_a.o",
+        "Texture":  null,
+        "Source":  "players\\heads\\gameface\\hhrai_a.o",
+        "Sha256":  "390130837ABBB61707628DC9DBDE58DED444A066732E18C3AE55704B7802E902"
+    },
+    {
+        "Name":  "Hair hhraj_a",
+        "Category":  "Hair",
+        "Model":  "hair/hhraj_a.o",
+        "Texture":  null,
+        "Source":  "players\\heads\\gameface\\hhraj_a.o",
+        "Sha256":  "F5E429704BDC000F172C7A98C7DD4790C54CD93D794A550017115D78AF0DDD98"
+    },
+    {
+        "Name":  "Hair hhrak_a",
+        "Category":  "Hair",
+        "Model":  "hair/hhrak_a.o",
+        "Texture":  null,
+        "Source":  "players\\heads\\gameface\\hhrak_a.o",
+        "Sha256":  "685A1C2A1B498E744D2C1EBD865BC564E8FDF2BD9705DB9A1A28C0DD64ED120C"
+    },
+    {
+        "Name":  "Hair hhral_a",
+        "Category":  "Hair",
+        "Model":  "hair/hhral_a.o",
+        "Texture":  null,
+        "Source":  "players\\heads\\gameface\\hhral_a.o",
+        "Sha256":  "C633A706E023F294831119A32F77760AAC5ABFD5F4ED4EB6E0B3AE0564360279"
+    },
+    {
+        "Name":  "Hair hhram_a",
+        "Category":  "Hair",
+        "Model":  "hair/hhram_a.o",
+        "Texture":  null,
+        "Source":  "players\\heads\\gameface\\hhram_a.o",
+        "Sha256":  "1D3DAD392659F8D139FB690646965ABFA0798B1ECAB2AA57811AFA3975F0C2B8"
+    },
+    {
+        "Name":  "Hair hhran_a",
+        "Category":  "Hair",
+        "Model":  "hair/hhran_a.o",
+        "Texture":  null,
+        "Source":  "players\\heads\\gameface\\hhran_a.o",
+        "Sha256":  "DA91BD8DD49E0F3C289E8B23E387796EF6FFD64CFD0289028C5FF7038CEAF848"
+    }
+]

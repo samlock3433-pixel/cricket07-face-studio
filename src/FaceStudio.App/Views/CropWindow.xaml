@@ -1,0 +1,28 @@
+<Window x:Class="Cricket07.FaceStudio.Views.CropWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:Cricket07.FaceStudio.Views"
+        Title="Crop reference photo" Width="900" Height="760" MinWidth="560" MinHeight="480" WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="12" Background="White">
+    <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Margin="0,0,0,8" Foreground="#333"
+      Text="Drag on the photo to draw the area to keep. Drag inside it to move it, drag a corner square to resize. Wheel or pinch zooms, right drag pans. The rest of the photo is only hidden: crop again or reset at any time."/>
+    <WrapPanel DockPanel.Dock="Bottom" HorizontalAlignment="Right" Margin="0,10,0,0">
+      <TextBlock x:Name="Info" VerticalAlignment="Center" Margin="0,0,16,0" Foreground="#555"/>
+      <Button Content="Reset (whole photo)" Click="OnReset" Padding="10,6" Margin="0,0,8,0"/>
+      <Button Content="Apply" Click="OnApply" IsDefault="True" Background="#234E74" Foreground="White" Padding="14,6" Margin="0,0,8,0"/>
+      <Button Content="Cancel" IsCancel="True" Padding="10,6"/>
+    </WrapPanel>
+    <Border Background="#20242E">
+      <v:ZoomPanel x:Name="Zoom">
+        <Grid>
+          <Image x:Name="Photo" Stretch="None"/>
+          <Canvas x:Name="Overlay" Background="Transparent" Cursor="Cross"
+                  MouseLeftButtonDown="OnDown" MouseMove="OnMove" MouseLeftButtonUp="OnUp" LostMouseCapture="OnLost">
+            <Path x:Name="Shade" Fill="#A0000000" IsHitTestVisible="False"/>
+            <Rectangle x:Name="Frame" Stroke="#FFD24A" StrokeThickness="2" IsHitTestVisible="False"/>
+          </Canvas>
+        </Grid>
+      </v:ZoomPanel>
+    </Border>
+  </DockPanel>
+</Window>

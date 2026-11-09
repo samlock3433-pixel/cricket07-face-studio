@@ -1,0 +1,929 @@
+{
+    "asset" : {
+        "generator" : "otools version 0.142",
+        "version" : "2.0"
+    },
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Skeleton.tagged",
+            "nodes" : [
+                0
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "name" : "Skeleton",
+            "children" : [
+                1
+            ]
+        },
+        {
+            "name" : "Hips [0]",
+            "rotation" : [
+                0.5,
+                0.500001430511475,
+                0.5,
+                0.499998539686203
+            ],
+            "translation" : [
+                -2.56227474622362e-21,
+                63.8300361633301,
+                0
+            ],
+            "children" : [
+                2,
+                19,
+                23
+            ]
+        },
+        {
+            "name" : "LowerSpine [1]",
+            "rotation" : [
+                -2.16976420554585e-13,
+                -1.14272903205953e-13,
+                -0.0475510954856873,
+                0.998868823051453
+            ],
+            "translation" : [
+                -5.2039764573855e-15,
+                -3.51989712044087e-07,
+                -1.35293469136211e-11
+            ],
+            "children" : [
+                3
+            ]
+        },
+        {
+            "name" : "MiddleSpine [2]",
+            "rotation" : [
+                -1.7123269761745e-13,
+                -3.76061161377894e-13,
+                0.0436193905770779,
+                0.999048233032227
+            ],
+            "translation" : [
+                9.19253921508789,
+                -3.15899598035685e-07,
+                1.36813286394366e-11
+            ],
+            "children" : [
+                4
+            ]
+        },
+        {
+            "name" : "UpperSpine [3]",
+            "rotation" : [
+                1.49611849601869e-13,
+                1.71739521475506e-13,
+                4.6186832136641e-10,
+                1
+            ],
+            "translation" : [
+                8.97873592376709,
+                1.30836156131409e-07,
+                -3.92187844699965e-11
+            ],
+            "children" : [
+                5,
+                7,
+                13
+            ]
+        },
+        {
+            "name" : "Neck [4]",
+            "rotation" : [
+                2.7738214828342e-13,
+                -1.38963534147656e-13,
+                0.135257631540298,
+                0.990810453891754
+            ],
+            "translation" : [
+                9.80557537078857,
+                3.4969887110492e-06,
+                1.43474876077021e-11
+            ],
+            "children" : [
+                6
+            ]
+        },
+        {
+            "name" : "Head [5]",
+            "rotation" : [
+                -8.50288670853003e-14,
+                -5.27062863297199e-14,
+                -0.130526185035706,
+                0.991444885730743
+            ],
+            "translation" : [
+                7.09223604202271,
+                1.0313522125216e-06,
+                4.28570026689279e-11
+            ],
+            "children" : [
+                27,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37
+            ]
+        },
+        {
+            "name" : "LCollarBone [6]",
+            "rotation" : [
+                -0.707105815410614,
+                3.89451599858148e-08,
+                -0.707107722759247,
+                -3.8945223934661e-08
+            ],
+            "translation" : [
+                5.55769348144531,
+                0.0440622754395008,
+                1.87046504020691
+            ],
+            "children" : [
+                8
+            ]
+        },
+        {
+            "name" : "LArm [7]",
+            "rotation" : [
+                -7.15044473284521e-12,
+                -1.94291587348903e-14,
+                -7.22929854000964e-13,
+                1
+            ],
+            "translation" : [
+                8.81808090209961,
+                1.63448049761428e-07,
+                -5.72503995499574e-05
+            ],
+            "children" : [
+                9
+            ]
+        },
+        {
+            "name" : "LArmTwist [8]",
+            "rotation" : [
+                -7.15044473284521e-12,
+                -6.98104692204381e-15,
+                -2.68231454842588e-13,
+                1
+            ],
+            "translation" : [
+                8.16268920898438,
+                -4.35363745054929e-08,
+                -2.59641437878599e-05
+            ],
+            "children" : [
+                10
+            ]
+        },
+        {
+            "name" : "LForearm [9]",
+            "rotation" : [
+                1.32920618955978e-09,
+                -2.66153904471267e-11,
+                -0.0871557071805,
+                0.99619472026825
+            ],
+            "translation" : [
+                6.91829824447632,
+                4.96373298020103e-09,
+                -2.53124235314317e-05
+            ],
+            "children" : [
+                11
+            ]
+        },
+        {
+            "name" : "LForearmTwist [10]",
+            "rotation" : [
+                -3.12164960547534e-10,
+                -8.17439657629926e-11,
+                4.36238600798333e-09,
+                1
+            ],
+            "translation" : [
+                9.04258823394775,
+                4.8075639824674e-07,
+                1.09786824395997e-05
+            ],
+            "children" : [
+                12
+            ]
+        },
+        {
+            "name" : "LHand [11]",
+            "rotation" : [
+                -1.01063535318247e-09,
+                -4.31423313740353e-10,
+                6.52210285778665e-09,
+                1
+            ],
+            "translation" : [
+                6.16349601745605,
+                1.55620875830209e-06,
+                9.81960329227149e-06
+            ],
+            "children" : [
+                42,
+                44,
+                46
+            ]
+        },
+        {
+            "name" : "RCollarBone [12]",
+            "rotation" : [
+                0.707105815410614,
+                3.99855366595148e-08,
+                -0.707107722759247,
+                3.99852631005615e-08
+            ],
+            "translation" : [
+                5.55771923065186,
+                0.044062115252018,
+                -1.87056946754456
+            ],
+            "children" : [
+                14
+            ]
+        },
+        {
+            "name" : "RArm [13]",
+            "rotation" : [
+                -2.3181262465144e-10,
+                -1.64676662605702e-13,
+                -3.66938128644988e-14,
+                1
+            ],
+            "translation" : [
+                8.81855201721191,
+                2.12002007060619e-07,
+                -1.47185483001522e-05
+            ],
+            "children" : [
+                15
+            ]
+        },
+        {
+            "name" : "RArmTwist [14]",
+            "rotation" : [
+                -2.3181274955153e-10,
+                -1.63389402918837e-13,
+                -3.93189814203426e-14,
+                1
+            ],
+            "translation" : [
+                8.16207504272461,
+                1.457311213926e-07,
+                7.93260096543236e-06
+            ],
+            "children" : [
+                16
+            ]
+        },
+        {
+            "name" : "RForearm [15]",
+            "rotation" : [
+                -3.56696089331976e-10,
+                -2.56344910576356e-11,
+                -0.0871557667851448,
+                0.99619472026825
+            ],
+            "translation" : [
+                6.91829872131348,
+                9.34088646431519e-08,
+                7.0783166847832e-06
+            ],
+            "children" : [
+                17
+            ]
+        },
+        {
+            "name" : "RForearmTwist [16]",
+            "rotation" : [
+                -3.59242163794349e-10,
+                -1.48914450215365e-10,
+                -8.53411030732332e-09,
+                1
+            ],
+            "translation" : [
+                9.0425910949707,
+                -9.86033001026954e-07,
+                1.83677111635916e-05
+            ],
+            "children" : [
+                18
+            ]
+        },
+        {
+            "name" : "RHand [17]",
+            "rotation" : [
+                -1.07978648244966e-09,
+                -2.84943513229052e-10,
+                -8.53176285176005e-09,
+                1
+            ],
+            "translation" : [
+                6.16349029541016,
+                -1.45041758514708e-06,
+                -4.21750519308262e-06
+            ],
+            "children" : [
+                47,
+                49,
+                51
+            ]
+        },
+        {
+            "name" : "LLeg [18]",
+            "rotation" : [
+                4.43568711492107e-13,
+                1.00093517458807e-13,
+                0.998865604400635,
+                0.047617856413126
+            ],
+            "translation" : [
+                -5.35385990142822,
+                -0.0116762043908238,
+                5.81376314163208
+            ],
+            "children" : [
+                20
+            ]
+        },
+        {
+            "name" : "LShin [19]",
+            "rotation" : [
+                -8.9718122796463e-14,
+                -4.08443793381303e-14,
+                0.0871557071805,
+                0.99619472026825
+            ],
+            "translation" : [
+                26.1880397796631,
+                -9.20641184620763e-07,
+                9.25166204979178e-07
+            ],
+            "children" : [
+                21
+            ]
+        },
+        {
+            "name" : "LFoot [20]",
+            "rotation" : [
+                -2.44945069002162e-13,
+                4.86939698632338e-13,
+                -0.578050851821899,
+                0.816000759601593
+            ],
+            "translation" : [
+                26.5992240905762,
+                1.81268788423949e-07,
+                9.00191423625074e-07
+            ],
+            "children" : [
+                22
+            ]
+        },
+        {
+            "name" : "LToe [21]",
+            "rotation" : [
+                4.18396803206038e-14,
+                2.40624035453829e-13,
+                -0.207911744713783,
+                0.978147566318512
+            ],
+            "translation" : [
+                8.63731861114502,
+                3.04473331880217e-07,
+                -2.02586375053215e-06
+            ]
+        },
+        {
+            "name" : "RLeg [22]",
+            "rotation" : [
+                4.43568711492107e-13,
+                1.00093517458807e-13,
+                0.998865604400635,
+                0.047617856413126
+            ],
+            "translation" : [
+                -5.35381603240967,
+                -0.0117093399167061,
+                -5.81379365921021
+            ],
+            "children" : [
+                24
+            ]
+        },
+        {
+            "name" : "RShin [23]",
+            "rotation" : [
+                -8.9718122796463e-14,
+                -4.08443793381303e-14,
+                0.0871557071805,
+                0.99619472026825
+            ],
+            "translation" : [
+                26.1880283355713,
+                -1.13915007204923e-06,
+                4.48397429408942e-07
+            ],
+            "children" : [
+                25
+            ]
+        },
+        {
+            "name" : "RFoot [24]",
+            "rotation" : [
+                -2.44945069002162e-13,
+                4.86939698632338e-13,
+                -0.578050851821899,
+                0.816000759601593
+            ],
+            "translation" : [
+                26.5992279052734,
+                4.36991527408281e-08,
+                -1.00710417427763e-06
+            ],
+            "children" : [
+                26
+            ]
+        },
+        {
+            "name" : "RToe [25]",
+            "rotation" : [
+                4.18396803206038e-14,
+                2.40624035453829e-13,
+                -0.207911744713783,
+                0.978147566318512
+            ],
+            "translation" : [
+                8.63731956481934,
+                3.68560023389364e-07,
+                -1.18466516596527e-07
+            ]
+        },
+        {
+            "name" : "Jaw [26]",
+            "rotation" : [
+                -1.94621088667191e-06,
+                3.49231783047799e-07,
+                0.819922149181366,
+                0.572475075721741
+            ],
+            "translation" : [
+                -1.50780022144318,
+                1.91497075557709,
+                8.53793608257547e-05
+            ],
+            "children" : [
+                28
+            ]
+        },
+        {
+            "name" : "LoLip_root [27]",
+            "rotation" : [
+                4.9768969192154e-14,
+                2.04765590198835e-14,
+                -0.137012302875519,
+                0.990569353103638
+            ],
+            "translation" : [
+                0.810734689235687,
+                -0.0123700639232993,
+                -2.24625453328943e-13
+            ],
+            "children" : [
+                29
+            ]
+        },
+        {
+            "name" : "LoLip [28]",
+            "rotation" : [
+                -3.6079431915768e-15,
+                3.1418499715812e-15,
+                -3.02673419660948e-09,
+                1
+            ],
+            "translation" : [
+                -3.87221632536239e-07,
+                2.33331102208467e-05,
+                9.20303655331522e-13
+            ]
+        },
+        {
+            "name" : "UpLip [29]",
+            "rotation" : [
+                -1.97718372874078e-06,
+                2.10686579293906e-08,
+                0.713427782058716,
+                0.70072877407074
+            ],
+            "translation" : [
+                -0.802656054496765,
+                2.88698601722717,
+                8.4625236922875e-05
+            ]
+        },
+        {
+            "name" : "Nose [30]",
+            "rotation" : [
+                -1.97718372874078e-06,
+                2.10686579293906e-08,
+                0.713427782058716,
+                0.70072877407074
+            ],
+            "translation" : [
+                1.39169430732727,
+                3.46258306503296,
+                8.91387971933e-05
+            ]
+        },
+        {
+            "name" : "Eye [31]",
+            "rotation" : [
+                -1.97729491446808e-06,
+                1.65730151824306e-09,
+                0.706514060497284,
+                0.707699000835419
+            ],
+            "translation" : [
+                2.77725124359131,
+                2.96374082565308,
+                9.44040148169734e-05
+            ]
+        },
+        {
+            "name" : "LLid [32]",
+            "rotation" : [
+                -1.97729491446808e-06,
+                1.65730151824306e-09,
+                0.706514060497284,
+                0.707699000835419
+            ],
+            "translation" : [
+                2.77658724784851,
+                2.57066774368286,
+                1.86240231990814
+            ]
+        },
+        {
+            "name" : "RLid [33]",
+            "rotation" : [
+                -1.97729491446808e-06,
+                1.65730151824306e-09,
+                0.706514060497284,
+                0.707699000835419
+            ],
+            "translation" : [
+                2.77659749984741,
+                2.57065796852112,
+                -1.86209452152252
+            ]
+        },
+        {
+            "name" : "RBrow [34]",
+            "rotation" : [
+                -1.97729491446808e-06,
+                1.65730151824306e-09,
+                0.706514060497284,
+                0.707699000835419
+            ],
+            "translation" : [
+                3.68592858314514,
+                2.56913328170776,
+                -1.86209225654602
+            ]
+        },
+        {
+            "name" : "LBrow [35]",
+            "rotation" : [
+                -1.97729491446808e-06,
+                1.65730151824306e-09,
+                0.706514060497284,
+                0.707699000835419
+            ],
+            "translation" : [
+                3.68591833114624,
+                2.56914353370667,
+                1.86228799819946
+            ]
+        },
+        {
+            "name" : "Corner [36]",
+            "rotation" : [
+                1.29759871470014e-06,
+                -1.49195693666115e-06,
+                -0.997696757316589,
+                0.0678321570158005
+            ],
+            "translation" : [
+                1.49572503566742,
+                3.79257941246033,
+                8.85048939380795e-05
+            ],
+            "children" : [
+                38,
+                39,
+                40,
+                41
+            ]
+        },
+        {
+            "name" : "LloLip [37]",
+            "rotation" : [
+                -1.56358443987453e-12,
+                -1.32252988467867e-14,
+                -0.727623164653778,
+                0.685977101325989
+            ],
+            "translation" : [
+                3.39168095588684,
+                0.659249305725098,
+                1.23789298534393
+            ]
+        },
+        {
+            "name" : "RloLip [38]",
+            "rotation" : [
+                -1.56358443987453e-12,
+                -1.32252988467867e-14,
+                -0.727623164653778,
+                0.685977101325989
+            ],
+            "translation" : [
+                3.39168095588684,
+                0.659249365329742,
+                -1.23783028125763
+            ]
+        },
+        {
+            "name" : "LupLip [39]",
+            "rotation" : [
+                -1.56678164366097e-12,
+                -5.74983650644158e-14,
+                -0.747508347034454,
+                0.664252400398254
+            ],
+            "translation" : [
+                2.51686763763428,
+                0.569978356361389,
+                1.29993069171906
+            ]
+        },
+        {
+            "name" : "RupLip [40]",
+            "rotation" : [
+                -1.56678164366097e-12,
+                -5.74983650644158e-14,
+                -0.747508347034454,
+                0.664252400398254
+            ],
+            "translation" : [
+                2.51686763763428,
+                0.569978177547455,
+                -1.30014491081238
+            ]
+        },
+        {
+            "name" : "LIndex1 [41]",
+            "rotation" : [
+                -0.802946090698242,
+                0.121552884578705,
+                0.0765921473503113,
+                0.578477382659912
+            ],
+            "translation" : [
+                5.79437303543091,
+                -2.31360721588135,
+                0.124496683478355
+            ],
+            "children" : [
+                43
+            ]
+        },
+        {
+            "name" : "LIndex2 [42]",
+            "rotation" : [
+                -2.05856132140525e-08,
+                2.20040110576747e-08,
+                0.222655847668648,
+                0.974897086620331
+            ],
+            "translation" : [
+                2.41998910903931,
+                1.11995468614623e-05,
+                3.1152469546214e-06
+            ]
+        },
+        {
+            "name" : "LMiddle1 [43]",
+            "rotation" : [
+                -0.793126463890076,
+                0.121306337416172,
+                0.0890661627054214,
+                0.59017151594162
+            ],
+            "translation" : [
+                5.9350118637085,
+                -1.03104269504547,
+                -0.218516677618027
+            ],
+            "children" : [
+                45
+            ]
+        },
+        {
+            "name" : "LMiddle2 [44]",
+            "rotation" : [
+                1.09684226146101e-08,
+                -5.45015410580163e-09,
+                0.514421343803406,
+                0.857537567615509
+            ],
+            "translation" : [
+                2.84349727630615,
+                6.46986836727592e-06,
+                -4.55503459306783e-06
+            ]
+        },
+        {
+            "name" : "LThumb1 [45]",
+            "rotation" : [
+                -0.186027050018311,
+                0.148892685770988,
+                -0.425920575857162,
+                0.872821033000946
+            ],
+            "translation" : [
+                2.11021542549133,
+                -2.31161332130432,
+                -0.966220080852509
+            ]
+        },
+        {
+            "name" : "RIndex1 [46]",
+            "rotation" : [
+                0.803020417690277,
+                -0.12105854600668,
+                0.0762381106615067,
+                0.578524649143219
+            ],
+            "translation" : [
+                5.79426622390747,
+                -2.31335163116455,
+                -0.124744772911072
+            ],
+            "children" : [
+                48
+            ]
+        },
+        {
+            "name" : "RIndex2 [47]",
+            "rotation" : [
+                -1.92158324807679e-08,
+                3.97753225911401e-08,
+                0.223081171512604,
+                0.974799871444702
+            ],
+            "translation" : [
+                2.41999316215515,
+                -1.35483242047485e-05,
+                1.97321992345678e-06
+            ]
+        },
+        {
+            "name" : "RMiddle1 [48]",
+            "rotation" : [
+                0.793040692806244,
+                -0.121863089501858,
+                0.0894826874136925,
+                0.590109050273895
+            ],
+            "translation" : [
+                5.93488788604736,
+                -1.03078472614288,
+                0.218243852257729
+            ],
+            "children" : [
+                50
+            ]
+        },
+        {
+            "name" : "RMiddle2 [49]",
+            "rotation" : [
+                8.3752169643958e-09,
+                -3.6068218634e-08,
+                0.514047145843506,
+                0.857761919498444
+            ],
+            "translation" : [
+                2.843501329422,
+                6.69784594720113e-06,
+                1.27549526496296e-07
+            ]
+        },
+        {
+            "name" : "RThumb1 [50]",
+            "rotation" : [
+                0.185964748263359,
+                -0.148966282606125,
+                -0.42556044459343,
+                0.872997403144836
+            ],
+            "translation" : [
+                2.11009621620178,
+                -2.31137990951538,
+                0.965992450714111
+            ]
+        }
+    ],
+    "skins" : [
+        {
+            "inverseBindMatrices" : 0,
+            "skeleton" : 0,
+            "joints" : [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38,
+                39,
+                40,
+                41,
+                42,
+                43,
+                44,
+                45,
+                46,
+                47,
+                48,
+                49,
+                50,
+                51
+            ]
+        }
+    ],
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5126,
+            "count" : 51,
+            "type" : "MAT4",
+            "byteOffset" : 0
+        }
+    ],
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 3264
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 3264,
+            "uri" : "data:application/octet-stream;base64,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"
+        }
+    ]
+}
