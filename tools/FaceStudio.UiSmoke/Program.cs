@@ -229,6 +229,25 @@ internal static class Program
                         window.Close();
                     }
                     {
+                        // A front marker moved by hand corrects the automatic fit there: left in place it changes nothing; the cheekbone
+                        // markers dragged 10 px outward widen the cheekbones by about that much on the head.
+                        var t=truth.SelectMany(p=>p).ToArray();float w=(t.Max(v=>v.Y)-t.Min(v=>v.Y))*1.3f;
+                        var window=new LikenessWindow(firstHead.Geometry,firstHead.Document.Parts,new[]{0},headPositions,minY+2);Layout(window,1320,900);
+                        window.LoadPhoto(false,photos[0].Item2);
+                        if(!window.AutoPlaceFront())throw new Exception("No face found in the straight render.");
+                        var auto=Marks(window.Fit());
+                        var fronts=Enumerable.Range(0,FaceFit.Landmarks.Length).Where(i=>FaceFit.Landmarks[i].Front).ToArray();var canvas=(Canvas)window.FindName("FrontPhotoCanvas");
+                        Vector2 At(int i){var m=(FrameworkElement)canvas.Children[Array.IndexOf(fronts,i)];return new Vector2((float)(Canvas.GetLeft(m)+m.Width/2),(float)(Canvas.GetTop(m)+m.Height/2));}
+                        window.SetPhotoMarker(false,19,At(19));window.SetPhotoMarker(false,20,At(20));
+                        if(Marks(window.Fit()).Zip(auto,Vector3.Distance).Max()>1e-3f)throw new Exception("Front markers confirmed in place changed the automatic fit.");
+                        window.SetPhotoMarker(false,19,At(19)+new Vector2(-10,0));window.SetPhotoMarker(false,20,At(20)+new Vector2(10,0));
+                        var wider=Marks(window.Fit());window.Close();
+                        int left=Array.IndexOf(fronts,19),right=Array.IndexOf(fronts,20);
+                        float gained=(wider[right].X-wider[left].X)-(auto[right].X-auto[left].X),expected=20*w/600;
+                        Console.WriteLine("LIKENESS front marker correction: cheekbones widened by "+gained.ToString("F3")+" units, expected about "+expected.ToString("F3"));
+                        if(!(gained>expected*0.75f&&gained<expected*1.25f))throw new Exception("Dragged front markers did not move the head by the dragged amount.");
+                    }
+                    {
                         // Profile with a known answer: nose, chin and brow pushed forward as well, seen from the front and from the
                         // side (facing right, so the mirroring is covered too). Side-view error = mean landmark error in depth and height.
                         Vector3 Forward(Vector3 v){var r=Reshape(v);float t=(v.Y-minY)/H,face=Math.Clamp((v.Z-(frontZ-depthZ*0.55f))/(depthZ*0.2f),0,1);return r with{Z=r.Z+face*depthZ*(0.07f*Bump(t,0.30f,0.08f)+0.05f*Bump(t,0.50f,0.05f)+0.04f*Bump(t,0.68f,0.05f))};}

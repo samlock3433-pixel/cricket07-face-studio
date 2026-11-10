@@ -15,13 +15,13 @@
             ToolTip="Finds the face in the front photo (MediaPipe face landmarks) and places the front markers. Runs when a front photo is loaded."/>
         </WrapPanel>
         <TextBlock TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,10"
-          Text="Use a straight-on front photo and a true profile (either side), neutral expression, mouth closed. Front markers are placed automatically; check them. Side markers start near their features but are faded and NOT used: click each one to confirm it or drag it onto the exact spot, working down the profile (forehead, brow, nose, lips, chin), then eye, jaw angle and ear. On a bearded face, put chin and jaw markers where the chin and jaw bone are, not on the outline of the beard. Hover a marker to see its name. If a marker on the head sits on the wrong spot, drag it there too."/>
+          Text="Use a straight-on front photo and a true profile (either side), neutral expression, mouth closed. The front photo is fitted automatically. Its markers are faded starting spots: if a feature on the head ends up in the wrong place or the face is too narrow or wide, drag that marker (cheekbone, jaw angle, chin…) onto the true spot in the photo and the head follows by the same amount. Side markers start near their features but are faded and NOT used: click each one to confirm it or drag it onto the exact spot, working down the profile (forehead, brow, nose, lips, chin), then eye, jaw angle and ear. On a bearded face, put chin and jaw markers where the chin and jaw bone are, not on the outline of the beard. Hover a marker to see its name. If a marker on the head sits on the wrong spot, drag it there too."/>
         <TextBlock Text="Fit" FontSize="20" Margin="0,6,0,6"/>
-        <TextBlock Text="Strength"/><Slider x:Name="Strength" Minimum="0" Maximum="1.2" Value="1" ValueChanged="OnSetting"/>
+        <TextBlock Text="Strength"/><Slider x:Name="Strength" Minimum="0" Maximum="2" Value="1" ValueChanged="OnSetting"/>
         <CheckBox x:Name="Symmetric" Content="Symmetric (recommended)" IsChecked="True" Click="OnOption" Margin="0,6,0,0"
           ToolTip="Averages left and right, so a slightly turned photo does not make the face lopsided."/>
         <CheckBox x:Name="Dense" Content="Automatic fit from the front photo" IsChecked="True" Click="OnOption" Margin="0,6,0,0"
-          ToolTip="Uses hundreds of face points found in the front photo instead of the numbered front markers, and straightens a turned or tilted head first. Side markers still set the profile. Untick to fit by the front markers you place."/>
+          ToolTip="Uses hundreds of face points found in the front photo instead of the numbered front markers, and straightens a turned or tilted head first. Side markers still set the profile. A front marker you drag corrects the automatic fit at that feature. Untick to fit by the front markers alone."/>
         <TextBlock Text="Depth from the front photo" Margin="0,6,0,0"/>
         <Slider x:Name="DepthStrength" Minimum="0" Maximum="1" Value="0.5" ValueChanged="OnSetting"
           ToolTip="How much of the estimated depth (nose, brow, chin projection) to use from the front photo alone. It is a rough estimate: side photo markers are more exact and override it where placed."/>
