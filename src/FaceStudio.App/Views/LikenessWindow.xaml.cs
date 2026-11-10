@@ -44,8 +44,13 @@ public partial class LikenessWindow : Window
     private Vector3[][]? _fitted;
     private Marker? _dragging; private Canvas? _dragCanvas;
     private FaceLandmarker? _landmarker;
+    private FaceDetection? _frontDetection;          // face points found in the front photo
+    private (Vector3[] Render, Vector3?[] Surface, float UnitsPerPixel)? _headFace; // the same points found on the head's own front render
+    private bool _headFaceTried;
     private readonly List<string> _notes = new();
     /// <summary>The bundled MediaPipe face landmark model (vendor/facemesh).</summary>
+    /// <summary>The detector under-reports how far a face differs from the head it is compared with; its differences are multiplied by this (measured on reshaped stock heads, see the smoke test).</summary>
+    public static double DenseGain { get; set; } = 1;
     public static string ModelPath { get; set; } = System.IO.Path.Combine(AppContext.BaseDirectory, "tools", "facemesh", "face_landmarks.onnx");
 
     /// <summary>New positions for every part (same order as given), set when the user applies.</summary>
@@ -172,6 +177,7 @@ public partial class LikenessWindow : Window
         var view = side ? _sidePhoto : _frontPhoto;
         var (pixels, width, height) = Ui.Pixels(image);
         var bitmap = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, pixels, width * 4); bitmap.Freeze();
+        if (!side) _frontDetection = null;
         view.Image.Source = bitmap; view.Width = width; view.Height = height; view.Loaded = true; view.Pixels = pixels;
         view.Canvas.Width = width; view.Canvas.Height = height; view.Hint.Visibility = Visibility.Collapsed;
         PlacePhotoMarkers(view);
@@ -191,6 +197,7 @@ public partial class LikenessWindow : Window
             var placed = _frontPhoto.Markers.Values.Select(m => m.Position).ToArray();
             var min = placed.Aggregate(new Vector2(float.MaxValue), Vector2.Min); var max = placed.Aggregate(new Vector2(float.MinValue), Vector2.Max);
             var detection = _landmarker.Detect(_frontPhoto.Pixels, _frontPhoto.Width, _frontPhoto.Height, placed.Length > 0 ? ((min + max) / 2, Math.Max(max.X - min.X, max.Y - min.Y) * 1.6f) : null);
+            _frontDetection = detection;
             if (detection is null) { Status.Text = "No face found automatically. Use a clear, straight-on photo, or place the markers by hand."; return false; }
             var markers = FaceLandmarker.FrontMarkers(detection);
             // Size markers to the face, not the photo, so they stay separate on a small face.
@@ -275,12 +282,66 @@ public partial class LikenessWindow : Window
     private void OnSetting(object sender, RoutedPropertyChangedEventArgs<double> e) { if (IsLoaded) Queue(); }
     private void OnOption(object sender, RoutedEventArgs e) { if (ReferenceEquals(sender, ShowResult)) ShowHeads(); else Queue(); }
 
+    /// <summary>
+    /// The face points on the head itself: the detector run on a plain front render of the unfitted head, and the head
+    /// surface under each point. Null (once, with a note) when no face is found on the render.
+    /// </summary>
+    private (Vector3[] Render, Vector3?[] Surface, float UnitsPerPixel)? HeadFace()
+    {
+        if (_headFaceTried) return _headFace;
+        _headFaceTried = true;
+        const int size = 640;
+        var camera = _frontHead.Camera;
+        var group = new Model3DGroup();
+        group.Children.Add(new AmbientLight(Color.FromRgb(120, 120, 120)));
+        group.Children.Add(new DirectionalLight(Colors.White, new Vector3D(-0.3, -0.4, -1)));
+        for (int p = 0; p < _frontHead.Visuals.Count; p++)
+        {
+            var clone = _frontHead.Visuals[p].Clone();
+            var mesh = (MeshGeometry3D)clone.Geometry;
+            mesh.Positions = new Point3DCollection(_positions[p].Select(v => new Point3D(v.X, v.Y, v.Z))); mesh.Normals = new Vector3DCollection();
+            group.Children.Add(clone);
+        }
+        var viewport = new Viewport3D { Camera = camera.Clone(), Width = size, Height = size };
+        viewport.Children.Add(new ModelVisual3D { Content = group });
+        var root = new Grid { Width = size, Height = size, Background = new SolidColorBrush(Color.FromRgb(160, 170, 180)) };
+        root.Children.Add(viewport);
+        root.Measure(new Size(size, size)); root.Arrange(new Rect(0, 0, size, size)); root.UpdateLayout();
+        var bitmap = new RenderTargetBitmap(size, size, 96, 96, PixelFormats.Pbgra32); bitmap.Render(root);
+        var (pixels, width, height) = Ui.Pixels(bitmap);
+        _landmarker ??= new FaceLandmarker(ModelPath);
+        if (_landmarker.Detect(pixels, width, height) is not { } detection) return null;
+        float units = (float)(camera.Width / size);
+        var surface = detection.Points.Take(DenseFit.PointCount).Select(px => FaceFit.FrontSurface(_positions, _parts, _faceParts,
+            new Vector2((float)camera.Position.X + (px.X - size / 2f) * units, (float)camera.Position.Y - (px.Y - size / 2f) * units))).ToArray();
+        return _headFace = (detection.FaceSpace(), surface, units);
+    }
+
     private Vector3[][] Compute()
     {
         int n = FaceFit.Landmarks.Length;
         Vector2?[] Points(PhotoView view) => Enumerable.Range(0, n).Select(i => view.Loaded && view.Markers.TryGetValue(i, out var m) && m.Placed ? (Vector2?)m.Position : null).ToArray();
-        var anchorPositions = _anchors.Select(a => a?.Position(_positions) ?? Vector3.Zero).ToArray();
         _notes.Clear();
+        if (Dense.IsChecked == true && _frontPhoto.Loaded && _frontDetection is { } photo)
+        {
+            (Vector3[] Render, Vector3?[] Surface, float UnitsPerPixel)? head = null;
+            try { head = HeadFace(); }
+            catch (Exception ex) when (ex is System.IO.IOException or System.IO.InvalidDataException or Microsoft.ML.OnnxRuntime.OnnxRuntimeException) { }
+            if (head is { } h)
+            {
+                var all = _positions.SelectMany(p => p).ToArray();
+                float mirrorX = (all.Min(v => v.X) + all.Max(v => v.X)) / 2;
+                var (from, to) = DenseFit.Controls(h.Surface, h.Render, photo.FaceSpace(), h.UnitsPerPixel, Symmetric.IsChecked == true, mirrorX, (float)(Strength.Value * DenseGain), (float)DepthStrength.Value);
+                var shaped = FaceFit.Fit(_positions, from, to, _neckY);
+                // The side photo's markers then set the profile (depth only; the front photo already set width and height).
+                var placed = _anchors.Select(a => a?.Position(shaped) ?? Vector3.Zero).ToArray();
+                var profile = FaceFit.Targets(placed, new Vector2?[n], Points(_sidePhoto), Symmetric.IsChecked == true, (float)Strength.Value, _notes);
+                for (int i = 0; i < n; i++) profile[i] = _anchors[i] is not null && profile[i] is { } t ? placed[i] with { Z = t.Z } : null;
+                return profile.Any(t => t is not null) ? FaceFit.Fit(shaped, _anchors, profile, _neckY) : shaped;
+            }
+            _notes.Add("The automatic fit could not find the face on the head itself, so the numbered front markers are used.");
+        }
+        var anchorPositions = _anchors.Select(a => a?.Position(_positions) ?? Vector3.Zero).ToArray();
         var targets = FaceFit.Targets(anchorPositions, Points(_frontPhoto), Points(_sidePhoto), Symmetric.IsChecked == true, (float)Strength.Value, _notes);
         for (int i = 0; i < n; i++) if (_anchors[i] is null) targets[i] = null;
         return FaceFit.Fit(_positions, _anchors, targets, _neckY);

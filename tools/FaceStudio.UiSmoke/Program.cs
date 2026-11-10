@@ -25,6 +25,43 @@ internal static class Program
                 string executable=Path.Combine(studio,"vendor","otools","otools-release-0179","otools.exe");
                 var converter=new OtoolsConverter(executable);
                 string output=Path.Combine(studio,"work","verification-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(output);
+                if(args.Length>3&&args[1]=="likeness")
+                {
+                    // Trial on real pictures: likeness <front photo> <face texture> [stock head id]. Saves before/after renders.
+                    BitmapSource Load(string path){using var s=File.OpenRead(path);var frame=BitmapDecoder.Create(s,BitmapCreateOptions.PreservePixelFormat,BitmapCacheOption.OnLoad).Frames[0];var c=new FormatConvertedBitmap(frame,PixelFormats.Bgra32,null,0);c.Freeze();return c;}
+                    var head=await StudioModel.OpenAsync(ModelDocument.ContainedPath(templates,$"heads/{(args.Length>4?args[4]:"1188")}/model.o"),converter);
+                    int face=head.Document.Parts.FindIndex(p=>Path.GetFileNameWithoutExtension(p.ImageUri)=="face");
+                    head.Wrap(face,Load(args[3]));
+                    var positions=head.Document.Parts.Select(p=>p.Positions.ToArray()).ToArray();
+                    var photo=Load(args[2]);
+                    var before=new[]{FrontRender(head),FrontRender(head,35)};
+                    var faceParts=head.Document.Parts.Select((p,i)=>(p,i)).Where(x=>Path.GetFileNameWithoutExtension(x.p.ImageUri)=="face").Select(x=>x.i).ToArray();
+                    var window=new LikenessWindow(head.Geometry,head.Document.Parts,faceParts,positions,positions.SelectMany(p=>p).Min(v=>v.Y)+2);Layout(window,1320,900);
+                    LikenessWindow.ModelPath=Path.Combine(studio,"vendor","facemesh","face_landmarks.onnx");
+                    window.LoadPhoto(false,photo);
+                    if(!window.AutoPlaceFront())throw new Exception("No face found in the front photo.");
+                    var fitted=window.Fit();
+                    Console.WriteLine($"largest move: {positions.Zip(fitted).SelectMany(z=>z.First.Zip(z.Second,Vector3.Distance)).Max():F2} units");
+                    for(int p=0;p<fitted.Length;p++){var m=(MeshGeometry3D)head.Geometry[p].Geometry;m.Positions=new Point3DCollection(fitted[p].Select(v=>new Point3D(v.X,v.Y,v.Z)));m.Normals=new Vector3DCollection();}
+                    var after=new[]{FrontRender(head),FrontRender(head,35)};
+                    var visual=new DrawingVisual();
+                    using(var dc=visual.RenderOpen())
+                    {
+                        dc.DrawRectangle(Brushes.Black,null,new Rect(0,0,600*3,700*2));
+                        double ph=700,pw=photo.PixelWidth*ph/photo.PixelHeight;
+                        dc.DrawImage(photo,new Rect(1200+(600-pw)/2,0,pw,ph));
+                        dc.DrawImage(before[0],new Rect(0,0,600,700));dc.DrawImage(after[0],new Rect(600,0,600,700));
+                        dc.DrawImage(before[1],new Rect(0,700,600,700));dc.DrawImage(after[1],new Rect(600,700,600,700));
+                        var type=new Typeface("Segoe UI");void Label(string t,double x,double y)=>dc.DrawText(new FormattedText(t,System.Globalization.CultureInfo.InvariantCulture,FlowDirection.LeftToRight,type,26,Brushes.Yellow,1),new Point(x+12,y+8));
+                        Label("Before (stock shape)",0,0);Label("After automatic fit",600,0);Label("Front photo",1200,0);
+                    }
+                    var sheet=new RenderTargetBitmap(1800,1400,96,96,PixelFormats.Pbgra32);sheet.Render(visual);
+                    string outFile=Path.Combine(output,"likeness-trial.png");SavePng(sheet,outFile);
+                    await head.ExportAsync(Path.Combine(output,"fitted"));
+                    File.WriteAllBytes(Path.Combine(output,"likeness-trial.big"),StudioModel.BuildFacePackage(Path.Combine(output,"fitted")));
+                    Console.WriteLine("SAVED "+outFile);
+                    app.Shutdown(0);return;
+                }
                 if(args.Length>1)
                 {
                     var custom=await StudioModel.OpenAsync(args[1],converter);
@@ -150,6 +187,45 @@ internal static class Program
                 if(photoMarker.RenderTransform is not ScaleTransform{ScaleX:var markerScale}||Math.Abs(photoMarker.Width*markerScale*photoZoom.Scale-ZoomPanel.MarkerScreenSize)>1e-3)throw new Exception("Markers do not keep their on-screen size while zoomed.");
                 if(likeness.Fit().Zip(fitBefore).SelectMany(z=>z.First.Zip(z.Second,Vector3.Distance)).Max()>1e-5f)throw new Exception("Zooming a panel changed the fit.");
                 photoZoom.Fit();if(Math.Abs(photoZoom.Magnification-1)>1e-3)throw new Exception("Fit did not restore the whole photo.");
+                {
+                    // Likeness accuracy with a known answer: reshape stock head 1188 (wider jaw, longer chin, wider nose, eyes
+                    // further apart), render that as the "photo", fit the ORIGINAL head to it and measure how much of the known
+                    // change was recovered, straight-on and turned. Numbers are mean landmark error in mesh units.
+                    var all=headPositions.SelectMany(p=>p).ToArray();float minY=all.Min(v=>v.Y),maxY=all.Max(v=>v.Y),midX=(all.Min(v=>v.X)+all.Max(v=>v.X))/2,H=maxY-minY,frontZ=all.Max(v=>v.Z),depthZ=frontZ-all.Min(v=>v.Z);
+                    float Bump(float t,float centre,float width){float d=(t-centre)/width;return MathF.Exp(-d*d);}
+                    Vector3 Reshape(Vector3 v)
+                    {
+                        float t=(v.Y-minY)/H,face=Math.Clamp((v.Z-(frontZ-depthZ*0.55f))/(depthZ*0.2f),0,1); // front half of the head only
+                        float x=midX+(v.X-midX)*(1+face*(0.16f*Bump(t,0.38f,0.10f)+0.10f*Bump(t,0.62f,0.05f)));     // jaw wider, eye line wider
+                        float y=v.Y-face*H*0.035f*Bump(t,0.30f,0.09f);                                               // chin longer
+                        return new Vector3(x,y,v.Z+face*depthZ*0.05f*Bump(t,0.50f,0.05f)*Bump((v.X-midX)/H,0,0.06f)); // nose out
+                    }
+                    var truth=headPositions.Select(p=>p.Select(Reshape).ToArray()).ToArray();
+                    Vector3[] Marks(Vector3[][] pos)=>FaceFit.Landmarks.Where(l=>l.Front).Select(l=>FaceFit.AnchorAtUv(firstHead.Document.Parts,new[]{0},l.Uv)!.Value.Position(pos)).ToArray();
+                    var goal=Marks(truth);
+                    double Flat(Vector3[] a){var from=a.Select(v=>new Vector2(v.X,v.Y)).ToArray();var to=goal.Select(v=>new Vector2(v.X,v.Y)).ToArray();var (s,o)=FaceFit.Align(from,to);return from.Zip(to,(p,q)=>Vector2.Distance(p*s+o,q)).Average();}
+                    double Solid(Vector3[] a){var t=DenseFit.Similarity(a,goal);return a.Zip(goal,(p,q)=>Vector3.Distance(t(p),q)).Average();}
+                    var start=Marks(headPositions);
+                    Console.WriteLine($"LIKENESS unfitted: front-view error {Flat(start):F3}, 3D error {Solid(start):F3}");
+                    // Render the reshaped head by moving the model's preview meshes, then put them back.
+                    var meshBefore=firstHead.Geometry.Select(g=>((MeshGeometry3D)g.Geometry).Positions).ToArray();
+                    for(int p=0;p<truth.Length;p++)((MeshGeometry3D)firstHead.Geometry[p].Geometry).Positions=new Point3DCollection(truth[p].Select(v=>new Point3D(v.X,v.Y,v.Z)));
+                    var photos=new[]{("straight",0.0,0.0),("turned 12 deg",12.0,0.0),("turned 10 + tilted 8 deg",10.0,8.0)}.Select(c=>(c.Item1,FrontRender(firstHead,c.Item2,c.Item3))).ToArray();
+                    for(int p=0;p<truth.Length;p++)((MeshGeometry3D)firstHead.Geometry[p].Geometry).Positions=meshBefore[p];
+                    foreach(var (label,photo) in photos)
+                    {
+                        var window=new LikenessWindow(firstHead.Geometry,firstHead.Document.Parts,new[]{0},headPositions,minY+2);Layout(window,1320,900);
+                        window.LoadPhoto(false,photo);
+                        if(!window.AutoPlaceFront())throw new Exception($"No face found in the {label} render.");
+                        var dense=(CheckBox)window.FindName("Dense");
+                        dense.IsChecked=false;var byMarkers=Marks(window.Fit());
+                        dense.IsChecked=true;var byDense=Marks(window.Fit());
+                        ((Slider)window.FindName("DepthStrength")).Value=0;var flatOnly=Marks(window.Fit());
+                        Console.WriteLine($"LIKENESS {label}: markers {Flat(byMarkers):F3} / {Solid(byMarkers):F3}; dense {Flat(byDense):F3} / {Solid(byDense):F3}; dense without depth {Flat(flatOnly):F3} / {Solid(flatOnly):F3}  (front-view / 3D)");
+                        if(!(Flat(byDense)<Flat(start)*0.85&&Flat(byDense)<Flat(byMarkers)))throw new Exception($"Automatic likeness fit ({label}) did not recover the known reshaping ({Flat(start):F3} -> {Flat(byDense):F3}).");
+                        window.Close();
+                    }
+                }
                 var mesh=(MeshGeometry3D)firstHead.Geometry[0].Geometry;
                 int highest=Enumerable.Range(0,mesh.Positions.Count).MaxBy(i=>mesh.Positions[i].Y);
                 var original=mesh.Positions[highest];
@@ -488,11 +564,12 @@ internal static class Program
         var converted=new FormatConvertedBitmap(image,PixelFormats.Bgra32,null,0);var pixels=new byte[converted.PixelWidth*converted.PixelHeight*4];
         converted.CopyPixels(pixels,converted.PixelWidth*4,0);return(pixels,converted.PixelWidth,converted.PixelHeight);
     }
-    private static BitmapSource FrontRender(StudioModel model)
+    private static BitmapSource FrontRender(StudioModel model,double yaw=0,double pitch=0)
     {
         var group=new Model3DGroup();foreach(var geometry in model.Geometry)group.Children.Add(geometry.Clone());
         var b=group.Bounds;var c=new Point3D(b.X+b.SizeX/2,b.Y+b.SizeY/2,b.Z+b.SizeZ/2);
         group.Children.Add(new AmbientLight(Color.FromRgb(130,130,130)));group.Children.Add(new DirectionalLight(Colors.White,new Vector3D(-0.2,-0.3,-1)));
+        if(yaw!=0||pitch!=0){var turn=new Transform3DGroup();turn.Children.Add(new RotateTransform3D(new AxisAngleRotation3D(new Vector3D(0,1,0),yaw),c));turn.Children.Add(new RotateTransform3D(new AxisAngleRotation3D(new Vector3D(1,0,0),pitch),c));foreach(var child in group.Children.OfType<GeometryModel3D>())child.Transform=turn;}
         var viewport=new Viewport3D{Camera=new OrthographicCamera(c+new Vector3D(0,0,60),new Vector3D(0,0,-1),new Vector3D(0,1,0),b.SizeY*1.3),Width=600,Height=700};
         viewport.Children.Add(new ModelVisual3D{Content=group});
         var root=new Grid{Width=600,Height=700,Background=new SolidColorBrush(Color.FromRgb(160,170,180))};root.Children.Add(viewport);

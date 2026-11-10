@@ -21,8 +21,8 @@ Sculpting
   - Single vertex (V): left drag moves just the point under the cursor (a yellow dot shows which).
     Points along texture seams move together; with Mirror on, the other side moves too.
   - Show wireframe (W): see the mesh edges.
-  - Likeness from photos: fits the head shape to a front and a side photo (front markers are placed
-    automatically; check them).
+  - Likeness from photos: fits the head shape to a front photo automatically (it copes with a slightly turned
+    or tilted head); a side photo with hand-placed markers sets the profile.
   - Hair: Add hair from a template (for heads with painted hair), Volume +/-, grab and smooth the hair.
 
 Texture work (on the 3D head)

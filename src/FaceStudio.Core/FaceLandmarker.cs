@@ -6,7 +6,13 @@ using Microsoft.ML.OnnxRuntime.Tensors;
 namespace Cricket07.FaceStudio.Core;
 
 /// <summary>478 face-mesh points found in a photo (pixel coordinates) and the model's face-presence score.</summary>
-public sealed record FaceDetection(Vector2[] Points, float Presence);
+public sealed record FaceDetection(Vector2[] Points, float Presence)
+{
+    /// <summary>The model's depth for each point, in photo pixels (smaller = nearer the camera). Rougher than x and y.</summary>
+    public float[] Depth { get; init; } = Array.Empty<float>();
+    /// <summary>The face points (without the irises) in face space: x right, y up, z toward the camera, photo pixels.</summary>
+    public Vector3[] FaceSpace() => Enumerable.Range(0, DenseFit.PointCount).Select(i => new Vector3(Points[i].X, -Points[i].Y, -Depth[i])).ToArray();
+}
 
 /// <summary>
 /// Finds facial landmarks in a front photo with Google's MediaPipe Face Mesh V2 landmark model (ONNX, Apache 2.0,
@@ -107,7 +113,7 @@ public sealed class FaceLandmarker : IDisposable
             throw new InvalidDataException("Unexpected face landmark model outputs.");
         float logit = presence[0];
         var points = Enumerable.Range(0, 478).Select(i => ToPhoto(landmarks[i * 3], landmarks[i * 3 + 1])).ToArray();
-        return new FaceDetection(points, 1 / (1 + MathF.Exp(-logit)));
+        return new FaceDetection(points, 1 / (1 + MathF.Exp(-logit))) { Depth = Enumerable.Range(0, 478).Select(i => landmarks[i * 3 + 2] * step).ToArray() };
     }
 
     /// <summary>Front-photo marker positions for <see cref="FaceFit.Landmarks"/> (null where the model has no matching point).</summary>

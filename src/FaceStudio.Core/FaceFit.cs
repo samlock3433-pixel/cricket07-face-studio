@@ -75,6 +75,28 @@ public static class FaceFit
         return best;
     }
 
+    /// <summary>
+    /// The frontmost point (largest z) of the given parts on the line through (x, y) along the z axis: what a front
+    /// view shows at that spot. Null when the line misses them.
+    /// </summary>
+    public static Vector3? FrontSurface(IReadOnlyList<Vector3[]> positions, IReadOnlyList<ModelPart> parts, IEnumerable<int> candidateParts, Vector2 xy)
+    {
+        Vector3? best = null;
+        foreach (int p in candidateParts)
+        {
+            var v = positions[p]; var indices = parts[p].Indices;
+            for (int t = 0; t + 2 < indices.Length; t += 3)
+            {
+                Vector3 a = v[indices[t]], b = v[indices[t + 1]], c = v[indices[t + 2]];
+                var (wa, wb, wc) = Barycentric(xy, new Vector2(a.X, a.Y), new Vector2(b.X, b.Y), new Vector2(c.X, c.Y));
+                if (!float.IsFinite(wa) || wa < 0 || wb < 0 || wc < 0) continue;
+                var hit = a * wa + b * wb + c * wc;
+                if (best is null || hit.Z > best.Value.Z) best = hit;
+            }
+        }
+        return best;
+    }
+
     private static (float, float, float) Barycentric(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
     {
         float det = (b.Y - c.Y) * (a.X - c.X) + (c.X - b.X) * (a.Y - c.Y);
@@ -227,6 +249,12 @@ public static class FaceFit
         var from = new List<Vector3>(); var to = new List<Vector3>();
         for (int i = 0; i < anchors.Length; i++)
             if (anchors[i] is { } a && targets[i] is { } t) { from.Add(a.Position(parts)); to.Add(t); }
+        return Fit(parts, from, to, neckY);
+    }
+
+    /// <summary>As above, from control points given directly (where they are, where they should go).</summary>
+    public static Vector3[][] Fit(IReadOnlyList<Vector3[]> parts, IReadOnlyList<Vector3> from, IReadOnlyList<Vector3> to, float neckY)
+    {
         if (from.Count == 0) return parts.Select(p => p.ToArray()).ToArray();
         var all = parts.SelectMany(p => p).ToArray();
         var min = all.Aggregate(new Vector3(float.MaxValue), Vector3.Min); var max = all.Aggregate(new Vector3(float.MinValue), Vector3.Max);

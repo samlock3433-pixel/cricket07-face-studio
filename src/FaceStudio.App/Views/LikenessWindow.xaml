@@ -20,6 +20,11 @@
         <TextBlock Text="Strength"/><Slider x:Name="Strength" Minimum="0" Maximum="1.2" Value="1" ValueChanged="OnSetting"/>
         <CheckBox x:Name="Symmetric" Content="Symmetric (recommended)" IsChecked="True" Click="OnOption" Margin="0,6,0,0"
           ToolTip="Averages left and right, so a slightly turned photo does not make the face lopsided."/>
+        <CheckBox x:Name="Dense" Content="Automatic fit from the front photo" IsChecked="True" Click="OnOption" Margin="0,6,0,0"
+          ToolTip="Uses hundreds of face points found in the front photo instead of the numbered front markers, and straightens a turned or tilted head first. Side markers still set the profile. Untick to fit by the front markers you place."/>
+        <TextBlock Text="Depth from the front photo" Margin="0,6,0,0"/>
+        <Slider x:Name="DepthStrength" Minimum="0" Maximum="1" Value="0.5" ValueChanged="OnSetting"
+          ToolTip="How much of the estimated depth (nose, brow, chin projection) to use from the front photo alone. It is a rough estimate: side photo markers are more exact and override it where placed."/>
         <CheckBox x:Name="ShowResult" Content="Show fitted shape" IsChecked="False" Click="OnOption" Margin="0,6,0,0"
           ToolTip="Head views show the fitted shape. Turn off to adjust head markers."/>
         <TextBlock Text="Landmarks" FontSize="20" Margin="0,16,0,6"/>
