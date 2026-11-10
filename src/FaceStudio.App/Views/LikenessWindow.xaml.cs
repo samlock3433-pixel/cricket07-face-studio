@@ -165,7 +165,8 @@ public partial class LikenessWindow : Window
         {
             var image = FaceSculptWindow.PickImage(this); if (image is null) return;
             LoadPhoto(view.Side, image);
-            Status.Text = view.Side ? "Drag the numbered markers on the side photo onto the same features (side markers are always placed by hand)."
+            Status.Text = view.Side ? (AutoPlaceSide() ? "Side markers are near their features but not used yet: click each one to confirm it, or drag it onto the exact spot. The profile follows as you go."
+                    : "Drag the numbered markers on the side photo onto the same features; faded markers are not used.")
                 : AutoPlaceFront() ? "Front markers placed automatically. Check each one and drag any that missed."
                 : Status.Text;
         }
@@ -290,14 +291,27 @@ public partial class LikenessWindow : Window
     {
         if (_headFaceTried) return _headFace;
         _headFaceTried = true;
-        const int size = 640;
+        const int size = DetectSize;
         var camera = _frontHead.Camera;
+        if (DetectHead(_frontHead) is not { } detection) return null;
+        float units = (float)(camera.Width / size);
+        var surface = detection.Points.Take(DenseFit.PointCount).Select(px => FaceFit.FrontSurface(_positions, _parts, _faceParts,
+            new Vector2((float)camera.Position.X + (px.X - size / 2f) * units, (float)camera.Position.Y - (px.Y - size / 2f) * units))).ToArray();
+        return _headFace = (detection.FaceSpace(), surface, units);
+    }
+
+    private const int DetectSize = 640;
+    /// <summary>The detector run on a plain render of the unfitted head from one of the head views.</summary>
+    private FaceDetection? DetectHead(HeadView view)
+    {
+        const int size = DetectSize;
+        var camera = view.Camera;
         var group = new Model3DGroup();
         group.Children.Add(new AmbientLight(Color.FromRgb(120, 120, 120)));
-        group.Children.Add(new DirectionalLight(Colors.White, new Vector3D(-0.3, -0.4, -1)));
-        for (int p = 0; p < _frontHead.Visuals.Count; p++)
+        group.Children.Add(new DirectionalLight(Colors.White, view.Side ? new Vector3D(-1, -0.4, -0.3) : new Vector3D(-0.3, -0.4, -1)));
+        for (int p = 0; p < view.Visuals.Count; p++)
         {
-            var clone = _frontHead.Visuals[p].Clone();
+            var clone = view.Visuals[p].Clone();
             var mesh = (MeshGeometry3D)clone.Geometry;
             mesh.Positions = new Point3DCollection(_positions[p].Select(v => new Point3D(v.X, v.Y, v.Z))); mesh.Normals = new Vector3DCollection();
             group.Children.Add(clone);
@@ -310,11 +324,35 @@ public partial class LikenessWindow : Window
         var bitmap = new RenderTargetBitmap(size, size, 96, 96, PixelFormats.Pbgra32); bitmap.Render(root);
         var (pixels, width, height) = Ui.Pixels(bitmap);
         _landmarker ??= new FaceLandmarker(ModelPath);
-        if (_landmarker.Detect(pixels, width, height) is not { } detection) return null;
-        float units = (float)(camera.Width / size);
-        var surface = detection.Points.Take(DenseFit.PointCount).Select(px => FaceFit.FrontSurface(_positions, _parts, _faceParts,
-            new Vector2((float)camera.Position.X + (px.X - size / 2f) * units, (float)camera.Position.Y - (px.Y - size / 2f) * units))).ToArray();
-        return _headFace = (detection.FaceSpace(), surface, units);
+        return _landmarker.Detect(pixels, width, height);
+    }
+
+    /// <summary>
+    /// Moves the side-photo markers near their features, from a rough face detection. The detector cannot measure a
+    /// true profile (checked against known shapes: no gain), so these are starting spots only: the markers stay
+    /// faded and unused until each is clicked or dragged. False when no face is found.
+    /// </summary>
+    public bool AutoPlaceSide()
+    {
+        if (!_sidePhoto.Loaded || _sidePhoto.Pixels is not { } pixels) return false;
+        try
+        {
+            _landmarker ??= new FaceLandmarker(ModelPath);
+            if (_landmarker.Detect(pixels, _sidePhoto.Width, _sidePhoto.Height) is not { } found) return false;
+            var p = found.Points; var nose = p[4];
+            double size = Math.Clamp(Vector2.Distance(p[10], p[152]) * 0.07, 6, Math.Max(_sidePhoto.Width, _sidePhoto.Height) / 34.0);
+            foreach (var (i, marker) in _sidePhoto.Markers)
+            {
+                // Paired features: the copy further from the nose is the one on the visible side of the face.
+                int mirror = FaceFit.Landmarks[i].Mirror;
+                int[] options = i == 2 ? new[] { 168 } : i == FaceFit.Landmarks.Length - 1 ? new[] { 234, 454 }
+                    : mirror >= 0 ? new[] { FaceLandmarker.MeshIndex[i], FaceLandmarker.MeshIndex[mirror] } : new[] { FaceLandmarker.MeshIndex[i] };
+                Resize(marker, size);
+                Move(marker, p[options.MaxBy(o => Math.Abs(p[o].X - nose.X))]);
+            }
+            return true;
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or System.IO.InvalidDataException or Microsoft.ML.OnnxRuntime.OnnxRuntimeException) { return false; }
     }
 
     private Vector3[][] Compute()
@@ -355,6 +393,7 @@ public partial class LikenessWindow : Window
             float moved = _positions.Zip(_fitted).SelectMany(z => z.First.Zip(z.Second, Vector3.Distance)).Max();
             ShowResult.IsChecked = true; ShowHeads();
             Status.Text = (_notes.Count > 0 ? string.Join(" ", _notes) + " " : "")
+                + (_sidePhoto.Loaded && _sidePhoto.Markers.Values.Count(m => m.Placed) is var done && done < _sidePhoto.Markers.Count ? $"Side photo: {done} of {_sidePhoto.Markers.Count} markers placed (faded ones are not used). " : "")
                 + $"Fitted: the largest move is {moved:F2} units. Turn off 'Show fitted shape' to adjust head markers; Apply makes it one undo step.";
         }
         catch (ArgumentException ex) { Status.Text = ex.Message; }

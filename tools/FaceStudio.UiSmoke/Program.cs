@@ -34,22 +34,25 @@ internal static class Program
                     head.Wrap(face,Load(args[3]));
                     var positions=head.Document.Parts.Select(p=>p.Positions.ToArray()).ToArray();
                     var photo=Load(args[2]);
-                    var before=new[]{FrontRender(head),FrontRender(head,35)};
+                    var before=new[]{FrontRender(head),FrontRender(head,-90)};
                     var faceParts=head.Document.Parts.Select((p,i)=>(p,i)).Where(x=>Path.GetFileNameWithoutExtension(x.p.ImageUri)=="face").Select(x=>x.i).ToArray();
                     var window=new LikenessWindow(head.Geometry,head.Document.Parts,faceParts,positions,positions.SelectMany(p=>p).Min(v=>v.Y)+2);Layout(window,1320,900);
                     LikenessWindow.ModelPath=Path.Combine(studio,"vendor","facemesh","face_landmarks.onnx");
                     window.LoadPhoto(false,photo);
                     if(!window.AutoPlaceFront())throw new Exception("No face found in the front photo.");
+                    BitmapSource? sidePhoto=args.Length>5?Load(args[5]):null;
+                    if(sidePhoto is not null){window.LoadPhoto(true,sidePhoto);Console.WriteLine("side photo face found: "+window.AutoPlaceSide());}
                     var fitted=window.Fit();
                     Console.WriteLine($"largest move: {positions.Zip(fitted).SelectMany(z=>z.First.Zip(z.Second,Vector3.Distance)).Max():F2} units");
                     for(int p=0;p<fitted.Length;p++){var m=(MeshGeometry3D)head.Geometry[p].Geometry;m.Positions=new Point3DCollection(fitted[p].Select(v=>new Point3D(v.X,v.Y,v.Z)));m.Normals=new Vector3DCollection();}
-                    var after=new[]{FrontRender(head),FrontRender(head,35)};
+                    var after=new[]{FrontRender(head),FrontRender(head,-90)};
                     var visual=new DrawingVisual();
                     using(var dc=visual.RenderOpen())
                     {
                         dc.DrawRectangle(Brushes.Black,null,new Rect(0,0,600*3,700*2));
                         double ph=700,pw=photo.PixelWidth*ph/photo.PixelHeight;
                         dc.DrawImage(photo,new Rect(1200+(600-pw)/2,0,pw,ph));
+                        if(sidePhoto is not null){double sw=sidePhoto.PixelWidth*ph/sidePhoto.PixelHeight;dc.DrawImage(sidePhoto,new Rect(1200+(600-sw)/2,700,sw,ph));foreach(FrameworkElement m in ((Canvas)window.FindName("SidePhotoCanvas")).Children)dc.DrawEllipse(null,new Pen(Brushes.Orange,2),new Point(1200+(600-sw)/2+(Canvas.GetLeft(m)+m.Width/2)*ph/sidePhoto.PixelHeight,700+(Canvas.GetTop(m)+m.Height/2)*ph/sidePhoto.PixelHeight),5,5);}
                         dc.DrawImage(before[0],new Rect(0,0,600,700));dc.DrawImage(after[0],new Rect(600,0,600,700));
                         dc.DrawImage(before[1],new Rect(0,700,600,700));dc.DrawImage(after[1],new Rect(600,700,600,700));
                         var type=new Typeface("Segoe UI");void Label(string t,double x,double y)=>dc.DrawText(new FormattedText(t,System.Globalization.CultureInfo.InvariantCulture,FlowDirection.LeftToRight,type,26,Brushes.Yellow,1),new Point(x+12,y+8));
@@ -224,6 +227,32 @@ internal static class Program
                         Console.WriteLine($"LIKENESS {label}: markers {Flat(byMarkers):F3} / {Solid(byMarkers):F3}; dense {Flat(byDense):F3} / {Solid(byDense):F3}; dense without depth {Flat(flatOnly):F3} / {Solid(flatOnly):F3}  (front-view / 3D)");
                         if(!(Flat(byDense)<Flat(start)*0.85&&Flat(byDense)<Flat(byMarkers)))throw new Exception($"Automatic likeness fit ({label}) did not recover the known reshaping ({Flat(start):F3} -> {Flat(byDense):F3}).");
                         window.Close();
+                    }
+                    {
+                        // Profile with a known answer: nose, chin and brow pushed forward as well, seen from the front and from the
+                        // side (facing right, so the mirroring is covered too). Side-view error = mean landmark error in depth and height.
+                        Vector3 Forward(Vector3 v){var r=Reshape(v);float t=(v.Y-minY)/H,face=Math.Clamp((v.Z-(frontZ-depthZ*0.55f))/(depthZ*0.2f),0,1);return r with{Z=r.Z+face*depthZ*(0.07f*Bump(t,0.30f,0.08f)+0.05f*Bump(t,0.50f,0.05f)+0.04f*Bump(t,0.68f,0.05f))};}
+                        var truth2=headPositions.Select(p=>p.Select(Forward).ToArray()).ToArray();var goal2=Marks(truth2);
+                        double Side(Vector3[] a){var from=a.Select(v=>new Vector2(v.Z,v.Y)).ToArray();var to=goal2.Select(v=>new Vector2(v.Z,v.Y)).ToArray();var (s,o)=FaceFit.Align(from,to);return from.Zip(to,(p,q)=>Vector2.Distance(p*s+o,q)).Average();}
+                        for(int p=0;p<truth2.Length;p++)((MeshGeometry3D)firstHead.Geometry[p].Geometry).Positions=new Point3DCollection(truth2[p].Select(v=>new Point3D(v.X,v.Y,v.Z)));
+                        var front2=FrontRender(firstHead);var side2=FrontRender(firstHead,90);
+                        for(int p=0;p<truth2.Length;p++)((MeshGeometry3D)firstHead.Geometry[p].Geometry).Positions=meshBefore[p];
+                        var window=new LikenessWindow(firstHead.Geometry,firstHead.Document.Parts,new[]{0},headPositions,minY+2);Layout(window,1320,900);
+                        window.LoadPhoto(false,front2);
+                        if(!window.AutoPlaceFront())throw new Exception("No face found in the straight render.");
+                        var frontOnly=Marks(window.Fit());
+                        window.LoadPhoto(true,side2);
+                        if(!window.AutoPlaceSide())throw new Exception("No face found in the side render.");
+                        if(Marks(window.Fit()).Zip(frontOnly,Vector3.Distance).Max()>1e-5f)throw new Exception("Side markers that were only auto-placed changed the fit.");
+                        window.Close();
+                        // Side markers on the exact spots (a careful user) must recover the profile.
+                        var manual=new LikenessWindow(firstHead.Geometry,firstHead.Document.Parts,new[]{0},headPositions,minY+2);Layout(manual,1320,900);
+                        manual.LoadPhoto(false,front2);manual.AutoPlaceFront();
+                        manual.LoadPhoto(true,BitmapSource.Create(600,600,96,96,PixelFormats.Bgra32,null,new byte[600*600*4],600*4));
+                        for(int i=0;i<FaceFit.Landmarks.Length;i++)if(FaceFit.Landmarks[i].Side&&FaceFit.AnchorAtUv(firstHead.Document.Parts,new[]{0},FaceFit.Landmarks[i].Uv) is {} a){var q=a.Position(truth2);manual.SetPhotoMarker(true,i,new Vector2(300-q.Z*20,300-(q.Y-(minY+maxY)/2)*20));}
+                        var bySide=Marks(manual.Fit());manual.Close();
+                        Console.WriteLine("LIKENESS profile: side-view error unfitted "+Side(start).ToString("F3")+", front photo only "+Side(frontOnly).ToString("F3")+", with side markers "+Side(bySide).ToString("F3"));
+                        if(!(Side(bySide)<Side(frontOnly)*0.8))throw new Exception("Side markers did not recover the known profile.");
                     }
                 }
                 var mesh=(MeshGeometry3D)firstHead.Geometry[0].Geometry;
