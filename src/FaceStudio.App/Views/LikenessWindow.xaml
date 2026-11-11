@@ -34,6 +34,10 @@
         <CheckBox x:Name="ShowResult" Content="Show fitted shape" IsChecked="False" Click="OnOption" Margin="0,6,0,0"
           ToolTip="Head views show the fitted shape. Turn off to adjust head markers."/>
         <CheckBox x:Name="PhotoOverlay" Content="Show head wireframe over photos" IsChecked="True" Click="OnOption" Margin="0,6,0,0"/>
+        <CheckBox x:Name="SurfacePinsEnabled" Content="Drag surface pins on the photo" IsChecked="True" Margin="0,6,0,0"/>
+        <TextBlock TextWrapping="Wrap" Foreground="#555" FontSize="12" Margin="0,4,0,4"
+          Text="Click the wire mesh to add a pin, then drag it onto the photo feature. Other pins hold their spots. Right-click a surface pin to remove it. Right drag pans; wheel zooms."/>
+        <Button Content="Clear surface pins" Click="OnClearSurfacePins" Padding="8,4" HorizontalAlignment="Left"/>
         <TextBlock Text="Photo texture" FontSize="20" Margin="0,16,0,6"/>
         <CheckBox x:Name="UsePhotoTexture" Content="Apply texture from these photos" Click="OnTextureOption"/>
         <TextBlock Text="Texture strength" Margin="0,6,0,0"/>

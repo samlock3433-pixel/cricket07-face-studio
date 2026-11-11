@@ -77,6 +77,7 @@ public partial class LikenessWindow : Window
         _sideHead = CreateHead(SideHeadHost, SideHeadCanvas, visuals, true);
         _frontPhoto = new PhotoView { Image = FrontPhoto, Canvas = FrontPhotoCanvas, Hint = FrontHint, Side = false };
         _sidePhoto = new PhotoView { Image = SidePhoto, Canvas = SidePhotoCanvas, Hint = SideHint, Side = true };
+        InitSurfacePins();
         Legend.Text = string.Join("\n", FaceFit.Landmarks.Select((l, i) => $"{i + 1}  {l.Name}" + (l.Front && l.Side ? "" : l.Side ? "  (side)" : "  (front)")));
         ResetAnchors();
         ShowHeads();
@@ -187,6 +188,7 @@ public partial class LikenessWindow : Window
         var bitmap = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, pixels, width * 4); bitmap.Freeze();
         if (!side) _frontDetection = null;
         view.Image.Source = bitmap; view.Width = width; view.Height = height; view.Loaded = true; view.Pixels = pixels;
+        ClearSurfacePins(side);
         view.Canvas.Width = width; view.Canvas.Height = height; view.Hint.Visibility = Visibility.Collapsed;
         PlacePhotoMarkers(view);
         Queue();
@@ -391,6 +393,7 @@ public partial class LikenessWindow : Window
     private Vector3[][] Compute()
     {
         var result = ComputeShape();
+        result = FitSurfacePins(result);
         for (int p = 0; p < result.Length; p++) if (_locked[p]) result[p] = _positions[p].ToArray();
         return result;
     }
@@ -457,6 +460,7 @@ public partial class LikenessWindow : Window
     }
     private void OnReset(object sender, RoutedEventArgs e)
     {
+        ClearSurfacePins(false); ClearSurfacePins(true);
         ResetAnchors();
         foreach (var view in new[] { _frontPhoto, _sidePhoto }) if (view.Loaded) PlacePhotoMarkers(view);
         ShowResult.IsChecked = false; _fitted = null; ShowHeads(); Queue();

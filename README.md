@@ -4,6 +4,8 @@ Standalone Windows desktop authoring tool. It has its own executable, projects, 
 
 ## Start
 
+In **Face from photos…**, click the photo's wire mesh to add a surface pin and drag it onto an ear edge, chin, lip or other feature. The head follows live, with other surface pins holding their spots. Right-click a surface pin to remove it, or use **Clear surface pins**. Right drag pans the photo and the wheel zooms. Wire edges keep a thin screen width at any zoom. Surface pins use the numbered photo markers for initial alignment and are included when building the photo texture.
+
 **Face from photos…** combines landmark shape fitting with photo texture creation. Load a front portrait and optionally a profile, then drag the numbered markers onto the matching features. The cyan wireframe over each photo helps check alignment. Confirm side markers by clicking or dragging them. Choose **Build / preview photo texture**, adjust texture strength and brightness matching, then **Apply to head**. Shape and texture share one undo step and are included in projects and **Save as .big…**. The baker blends visible surfaces inside the marker coverage, keeps the existing atlas elsewhere and preserves its eyeball/teeth pictures and alpha. This implementation supports one front portrait and one right-side profile view, with either horizontal photo orientation. Use even lighting and refine visible transitions with the painting tools.
 
 Double-click `Start-FaceStudio.cmd`, or run `dist/Cricket07.FaceStudio.exe`. Keep the entire dist folder together, in a writable location. The launcher uses the workspace's bundled .NET SDK when available; otherwise install the .NET 8 Windows Desktop runtime. OTools 0.179 is included with its license.

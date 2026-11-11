@@ -11,12 +11,13 @@ namespace Cricket07.FaceStudio.Views;
 
 public partial class LikenessWindow
 {
-    private PhotoTextureView? RegisteredPhoto(PhotoView view, Vector3[][] positions)
+    private PhotoTextureView? RegisteredPhoto(PhotoView view, Vector3[][] positions, bool includeSurfacePins = false)
     {
         if (!view.Loaded || view.Pixels is null) return null;
         var pins = view.Markers.Where(m => m.Value.Placed && _anchors[m.Key] is not null)
-            .Select(m => (_anchors[m.Key]!.Value.Position(positions), m.Value.Position)).ToArray();
-        return pins.Length >= 4 ? new PhotoTextureView(view.Pixels, view.Width, view.Height, view.Side, pins) : null;
+            .Select(m => (_anchors[m.Key]!.Value.Position(positions), m.Value.Position)).ToList();
+        if(includeSurfacePins) pins.AddRange(_surfacePins.Where(p=>p.Side==view.Side).Select(p=>(p.Anchor.Position(positions),p.Marker.Position)));
+        return pins.Count >= 4 ? new PhotoTextureView(view.Pixels, view.Width, view.Height, view.Side, pins) : null;
     }
 
     /// <summary>Builds from the current markers and a fitted mesh, also used by the Apply action.</summary>
@@ -24,7 +25,7 @@ public partial class LikenessWindow
     {
         if (_baseTexture is null) throw new ArgumentException("Open a head with a face texture first.");
         positions ??= Compute();
-        var photos = new[] { _frontPhoto, _sidePhoto }.Select(v => RegisteredPhoto(v, positions)).OfType<PhotoTextureView>().ToArray();
+        var photos = new[] { _frontPhoto, _sidePhoto }.Select(v => RegisteredPhoto(v, positions, includeSurfacePins:true)).OfType<PhotoTextureView>().ToArray();
         if (photos.Length == 0) throw new ArgumentException("Confirm at least four markers spread across a photo, then build its texture.");
         var (pixels, width, height) = Ui.Pixels(_baseTexture);
         var baked = PhotoTexture.Bake(pixels, width, height, _parts, positions, _faceParts, photos, (float)TextureStrength.Value, EqualizePhotos.IsChecked == true);
@@ -73,26 +74,33 @@ public partial class LikenessWindow
             if (PhotoOverlay.IsChecked != true || RegisteredPhoto(view, positions) is not { } photo) continue;
             try
             {
-                var project = PhotoTexture.Projection(photo, warp: false);
+                var project = ShowResult.IsChecked == true && _surfaceCameras.TryGetValue(view.Side,out var camera)?camera:PhotoTexture.Projection(photo, warp: false);
                 var wire = new StreamGeometry();
                 using (var context = wire.Open())
                 {
                     foreach (int p in _faceParts)
                     {
                         var part = _parts[p]; var vertices = positions[p];
+                        var edges = new HashSet<(int,int)>();
                         for (int t = 0; t + 2 < part.Indices.Length; t += 3)
                         {
                             var a = vertices[part.Indices[t]]; var b = vertices[part.Indices[t + 1]]; var c = vertices[part.Indices[t + 2]];
                             var normal = Vector3.Cross(b - a, c - a);
                             if ((view.Side ? normal.X : normal.Z) <= 0) continue;
-                            var pa = project(a); var pb = project(b); var pc = project(c);
-                            context.BeginFigure(new Point(pa.X, pa.Y), false, true);
-                            context.LineTo(new Point(pb.X, pb.Y), true, false); context.LineTo(new Point(pc.X, pc.Y), true, false);
+                            for(int edge=0;edge<3;edge++)
+                            {
+                                int from=part.Indices[t+edge],to=part.Indices[t+(edge+1)%3];
+                                if(!edges.Add(from<to?(from,to):(to,from)))continue;
+                                var start=project(vertices[from]);var end=project(vertices[to]);
+                                context.BeginFigure(new Point(start.X,start.Y),false,false);
+                                context.LineTo(new Point(end.X,end.Y),true,false);
+                            }
                         }
                     }
                 }
                 wire.Freeze();
-                view.Canvas.Children.Insert(0, new Path { Tag = "PhotoWire", Data = wire, Stroke = Brushes.Cyan, StrokeThickness = 0.8, Opacity = 0.5, IsHitTestVisible = false });
+                view.Canvas.Children.Insert(0, new Path { Tag = "PhotoWire", Data = wire, Stroke = Brushes.SlateBlue, StrokeThickness = 0.65, Opacity = 0.75, IsHitTestVisible = false });
+                UpdateWireThickness(view,view.Side?SidePhotoZoom:FrontPhotoZoom);
             }
             catch (ArgumentException) { } // more widely spread markers are needed for an affine camera
         }

@@ -33,6 +33,8 @@ public sealed class ZoomPanel : Grid
         "KeepScreenSize", typeof(bool), typeof(ZoomPanel), new PropertyMetadata(false, (d, e) => { if (d is UIElement u && (bool)e.NewValue) Find(u)?.CounterScale(u); }));
     public static void SetKeepScreenSize(UIElement element, bool value) => element.SetValue(KeepScreenSizeProperty, value);
     public static bool GetKeepScreenSize(UIElement element) => (bool)element.GetValue(KeepScreenSizeProperty);
+    public static readonly DependencyProperty ScreenSizeProperty = DependencyProperty.RegisterAttached("ScreenSize", typeof(double), typeof(ZoomPanel), new PropertyMetadata(MarkerScreenSize));
+    public static void SetScreenSize(UIElement element, double size) => element.SetValue(ScreenSizeProperty, size);
 
     /// <summary>Screen pixels per content pixel.</summary>
     public double Scale => _view.Scale;
@@ -97,7 +99,7 @@ public sealed class ZoomPanel : Grid
     private void CounterScale(UIElement element)
     {
         double size = element is FrameworkElement { Width: > 0 } f ? f.Width : MarkerScreenSize;
-        double factor = MarkerScreenSize / (size * _view.Scale);
+        double factor = (double)element.GetValue(ScreenSizeProperty) / (size * _view.Scale);
         element.RenderTransformOrigin = new Point(0.5, 0.5);
         element.RenderTransform = new ScaleTransform(factor, factor);
     }
