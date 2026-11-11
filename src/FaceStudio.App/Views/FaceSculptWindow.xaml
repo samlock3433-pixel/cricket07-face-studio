@@ -12,7 +12,7 @@
       <Button Content="Load project…" Click="OnLoad" Padding="10,6" Margin="0,0,8,0"/>
       <Button Content="Undo" Click="OnUndo" Padding="10,6" Margin="0,0,8,0"/>
       <Button Content="Redo" Click="OnRedo" Padding="10,6" Margin="0,0,8,0"/>
-      <Button Content="Likeness from photos…" Click="OnLikeness" Padding="10,6" Margin="0,0,8,0" ToolTip="Fit the head shape to a front and a side photo"/>
+      <Button Content="Face from photos…" Click="OnLikeness" Padding="10,6" Margin="0,0,8,0" ToolTip="Fit the head with photo markers and build its face texture from front and side photos"/>
       <Button Content="Wrap UV texture…" Click="OnTexture" Padding="10,6" Margin="0,0,8,0"/>
       <Button Content="Front reference…" Click="OnReference" Tag="front" Padding="10,6" Margin="0,0,8,0"/>
       <Button Content="Side reference…" Click="OnReference" Tag="side" Padding="10,6"/>

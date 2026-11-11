@@ -252,7 +252,7 @@ public partial class FaceSculptWindow
     }
     /// <summary>The state that undoing (or redoing) <paramref name="step"/> replaces, of the same kind.</summary>
     private UndoStep Current(UndoStep step) => step.Model is { } m
-        ? step with { Png = m.TextureOverrides.GetValueOrDefault(m.Document.Parts[step.Part].ImageUri ?? ""), Pins = PinsOf(m, step.Part) }
+        ? step with { Mesh = step.Mesh is null ? null : Snapshot(), Png = m.TextureOverrides.GetValueOrDefault(m.Document.Parts[step.Part].ImageUri ?? ""), Pins = PinsOf(m, step.Part) }
         : new UndoStep(Snapshot());
     private PinState? PinsOf(StudioModel model, int part) => _pins is { } p && p.Model == model && p.Uri == model.Document.Parts[part].ImageUri ? p : null;
     private void Apply(UndoStep step)
@@ -262,6 +262,6 @@ public partial class FaceSculptWindow
             m.RestoreTexture(step.Part, step.Png); _dirty = true;
             if (step.Pins is not null || PinsOf(m, step.Part) is not null) { _pins = step.Pins; _selectedPin = -1; QueueRedrawPins(); }
         }
-        else Restore(step.Mesh!);
+        if (step.Mesh is not null) Restore(step.Mesh);
     }
 }

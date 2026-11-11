@@ -4,6 +4,8 @@ Standalone Windows desktop authoring tool. It has its own executable, projects, 
 
 ## Start
 
+**Face from photos…** combines landmark shape fitting with photo texture creation. Load a front portrait and optionally a profile, then drag the numbered markers onto the matching features. The cyan wireframe over each photo helps check alignment. Confirm side markers by clicking or dragging them. Choose **Build / preview photo texture**, adjust texture strength and brightness matching, then **Apply to head**. Shape and texture share one undo step and are included in projects and **Save as .big…**. The baker blends visible surfaces inside the marker coverage, keeps the existing atlas elsewhere and preserves its eyeball/teeth pictures and alpha. This implementation supports one front portrait and one right-side profile view, with either horizontal photo orientation. Use even lighting and refine visible transitions with the painting tools.
+
 Double-click `Start-FaceStudio.cmd`, or run `dist/Cricket07.FaceStudio.exe`. Keep the entire dist folder together, in a writable location. The launcher uses the workspace's bundled .NET SDK when available; otherwise install the .NET 8 Windows Desktop runtime. OTools 0.179 is included with its license.
 
 1. Select a head template (heads marked "with hair" carry a 3D hair mesh, "with hair fringe" a small front fringe; the others have hair painted on the face texture). Choose **Start with selected head**, or **Open face (.big / .o)** for a face package or uncompressed Cricket 07 ELF model. BIGF/BIG4 packages with root `model.o` and `textures.fsh` (or `textures`) members open directly; compressed members are rejected. Named layers are matched to decoded meshes, with conservative bounds that include the edited geometry.

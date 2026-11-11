@@ -25,6 +25,11 @@ internal static class Program
                 string executable=Path.Combine(studio,"vendor","otools","otools-release-0179","otools.exe");
                 var converter=new OtoolsConverter(executable);
                 string output=Path.Combine(studio,"work","verification-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(output);
+                if(args.Length>2&&args[1]=="photo-maker")
+                {
+                    await CheckPhotoMaker(studio,output,converter,args);
+                    app.Shutdown(0);return;
+                }
                 if(args.Length>2&&args[1]=="probe")
                 {
                     // probe <texture> [headId] [template]: small parts, their UVs and texture colour; renders from below with and without them.
@@ -651,6 +656,49 @@ internal static class Program
             catch(Exception ex){Console.Error.WriteLine(ex);app.Shutdown(1);}
         };
         app.Run();
+    }
+    private static async Task CheckPhotoMaker(string studio,string output,OtoolsConverter converter,string[] args)
+    {
+        var source=args.Length>3?args[3]:Path.Combine(studio,"templates","heads","1188","model.o");
+        var model=await StudioModel.OpenAsync(source,converter);
+        var editor=new FaceSculptWindow(model);Layout(editor,1320,900);
+        var parts=model.Document.Parts;
+        var face=Enumerable.Range(0,parts.Count).Where(p=>Path.GetFileNameWithoutExtension(parts[p].ImageUri)=="face").ToArray();
+        var positions=parts.Select(p=>p.Positions.ToArray()).ToArray();
+        var beforeTexture=model.CurrentTexture(face[0]);
+        var window=new LikenessWindow(model.Geometry,parts,face,positions,positions.SelectMany(p=>p).Min(v=>v.Y)+2,beforeTexture);
+        Layout(window,1320,900);
+        LikenessWindow.ModelPath=Path.Combine(studio,"vendor","facemesh","face_landmarks.onnx");
+        using(var stream=File.OpenRead(args[2]))window.LoadPhoto(false,BitmapDecoder.Create(stream,BitmapCreateOptions.PreservePixelFormat,BitmapCacheOption.OnLoad).Frames[0]);
+        if(!window.AutoPlaceFront())throw new Exception("Photo-maker: no face detected in the test photo.");
+        var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+        typeof(LikenessWindow).GetMethod("Refit",flags)!.Invoke(window,null);
+        var shape=window.Fit();
+        var texture=window.BuildPhotoTexture(shape);
+        SavePng(texture,Path.Combine(output,"photo-atlas.png"));
+        SaveWindow(window,Path.Combine(output,"photo-maker.png"),1320,900);
+        typeof(FaceSculptWindow).GetMethod("ApplyLikeness",flags)!.Invoke(editor,new object[]{shape,texture});
+        var expected=PixelsOf(texture).Pixels;
+        if(expected.SequenceEqual(PixelsOf(beforeTexture).Pixels))throw new Exception("Photo-maker did not change the atlas.");
+        Invoke(editor,"OnUndo",editor);
+        if(!PixelsOf(model.CurrentTexture(face[0])).Pixels.SequenceEqual(PixelsOf(beforeTexture).Pixels))throw new Exception("Photo-maker undo did not restore texture.");
+        for(int p=0;p<parts.Count;p++)
+            if(((MeshGeometry3D)model.Geometry[p].Geometry).Positions.Select(v=>new Vector3((float)v.X,(float)v.Y,(float)v.Z)).Zip(positions[p]).Any(v=>Vector3.Distance(v.First,v.Second)>1e-5f))throw new Exception("Photo-maker undo did not restore shape.");
+        Invoke(editor,"OnRedo",editor);
+        if(!PixelsOf(model.CurrentTexture(face[0])).Pixels.SequenceEqual(expected))throw new Exception("Photo-maker redo did not restore texture.");
+        string project=Path.Combine(output,"photo-face.c07face.json");editor.SaveProject(project);
+        Invoke(editor,"OnUndo",editor);editor.LoadProject(project);
+        if(!PixelsOf(model.CurrentTexture(face[0])).Pixels.SequenceEqual(expected))throw new Exception("Photo-maker project lost the photo texture.");
+        SavePng(FrontRender(model),Path.Combine(output,"photo-face.png"));
+        string exported=Path.Combine(output,"export");await model.ExportAsync(exported);
+        string package=Path.Combine(output,"photo-face.big");File.WriteAllBytes(package,StudioModel.BuildFacePackage(exported));
+        var reopened=await StudioModel.OpenAsync(package,converter);
+        var saved=PixelsOf(reopened.CurrentTexture(face[0])).Pixels;
+        double error=Enumerable.Range(0,expected.Length).Where(i=>i%4!=3&&expected[i/4*4+3]>0).Average(i=>Math.Abs(saved[i]-expected[i]));
+        if(error>12)throw new Exception($"Photo-maker export texture error {error:F2} exceeds the DXT allowance.");
+        for(int p=0;p<parts.Count;p++)if(shape[p].Zip(reopened.Document.Parts[p].Positions).Any(v=>Vector3.Distance(v.First,v.Second)>0.001f))throw new Exception("Photo-maker .big lost the fitted shape.");
+        reopened.DeleteWorkspace();model.DeleteWorkspace();window.Close();
+        Console.WriteLine($"PASS photo-maker: automatic photo fit, wire overlay, photo UV bake, atomic shape/texture undo and redo, project reload, .big reopen. Texture error {error:F2}/255. Output: {output}");
     }
     private static void Layout(Window window,int width,int height){window.Measure(new Size(width,height));window.Arrange(new Rect(0,0,width,height));window.UpdateLayout();}
     private static (int Part,Vector2 Uv)? HitUv(FaceSculptWindow window,Point point)=>((int,Vector2)?)typeof(FaceSculptWindow).GetMethod("HitUv",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(window,new object[]{point});

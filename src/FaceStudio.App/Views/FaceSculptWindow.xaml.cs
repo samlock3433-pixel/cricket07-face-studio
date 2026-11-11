@@ -132,12 +132,24 @@ public partial class FaceSculptWindow : Window
             var face=Enumerable.Range(0,_parts.Count).Where(i=>_parts[i].Model==_models[0]&&string.Equals(Path.GetFileNameWithoutExtension(parts[i].ImageUri),"face",StringComparison.OrdinalIgnoreCase)).ToArray();
             if(face.Length==0)throw new InvalidDataException("This head has no face texture to locate landmarks on.");
             float neck=(float)(_bounds.Y+_bounds.SizeY*0.1); // the neck joins the body: always held
-            var window=new LikenessWindow(_parts.Select(p=>p.Visual).ToList(),parts,face,AllPositions(),neck){Owner=this};
+            var baseTexture=(_parts[face[0]].Visual.Material as DiffuseMaterial)?.Brush is ImageBrush { ImageSource:BitmapSource image }?image:null;
+            var window=new LikenessWindow(_parts.Select(p=>p.Visual).ToList(),parts,face,AllPositions(),neck,
+                baseTexture,Enumerable.Range(0,_parts.Count).Select(Locked).ToArray()){Owner=this};
             if(window.ShowDialog()!=true||window.Result is not { } result)return;
-            Edit(p=>result[p]);
-            Status.Text="Head shape fitted to the photos. Undo restores the previous shape.";
+            ApplyLikeness(result,window.TextureResult);
+            Status.Text=window.TextureResult is null?"Head shape fitted to the photos. Undo restores the previous shape.":"Photo shape and texture applied. Undo restores both. Save as .big exports the face.";
         }
         catch(Exception ex){Status.Text=ex.Message;}
+    }
+    internal void ApplyLikeness(Vector3[][] result,BitmapSource? texture)
+    {
+        var before=Snapshot();
+        int face=_models[0].Document.Parts.FindIndex(p=>string.Equals(Path.GetFileNameWithoutExtension(p.ImageUri),"face",StringComparison.OrdinalIgnoreCase));
+        var model=_models[0];
+        var step=texture is null?new UndoStep(before):new UndoStep(before,model,face,model.TextureOverrides.GetValueOrDefault(model.Document.Parts[face].ImageUri!),PinsOf(model,face));
+        if(texture is not null){model.Wrap(face,texture);if(PinsOf(model,face) is not null)_pins=null;}
+        for(int p=0;p<_parts.Count;p++)if(!Locked(p))SetPositions(p,result[p].Select(v=>new Point3D(v.X,v.Y,v.Z)));
+        _undo.Push(step);_redo.Clear();_dirty=true;QueueRedrawPins();
     }
     /// <summary>Index into _parts of the head's hair mesh (the part textured with "hair"), or -1.</summary>
     private int HairPart=>_parts.FindIndex(p=>string.Equals(Path.GetFileNameWithoutExtension(p.Model.Document.Parts[p.Index].ImageUri),"hair",StringComparison.OrdinalIgnoreCase));

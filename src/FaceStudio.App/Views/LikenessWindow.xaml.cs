@@ -54,12 +54,19 @@ public partial class LikenessWindow : Window
 
     /// <summary>New positions for every part (same order as given), set when the user applies.</summary>
     public Vector3[][]? Result { get; private set; }
+    public BitmapSource? TextureResult { get; private set; }
+    private readonly BitmapSource? _baseTexture;
+    private readonly bool[] _locked;
+    private BitmapSource? _photoTexture;
 
-    public LikenessWindow(IReadOnlyList<GeometryModel3D> visuals, IReadOnlyList<ModelPart> parts, int[] faceParts, Vector3[][] positions, float neckY)
+    public LikenessWindow(IReadOnlyList<GeometryModel3D> visuals, IReadOnlyList<ModelPart> parts, int[] faceParts, Vector3[][] positions, float neckY, BitmapSource? baseTexture = null, bool[]? locked = null)
     {
         InitializeComponent();
         Ui.FitToScreen(this);
         (_parts, _faceParts, _positions, _neckY) = (parts, faceParts, positions, neckY);
+        _baseTexture = baseTexture;
+        _locked = locked ?? new bool[parts.Count];
+        UsePhotoTexture.IsEnabled = baseTexture is not null;
         _anchors = new MeshAnchor?[FaceFit.Landmarks.Length];
         _refit = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
         _refit.Tick += (_, _) => { _refit.Stop(); Refit(); };
@@ -120,6 +127,7 @@ public partial class LikenessWindow : Window
                 if (_anchors[i] is { } a) Move(marker, Project(view, a.Position(_positions)));
             }
         }
+        UpdatePhotoOverlays(shown);
     }
     private void ResetAnchors()
     {
@@ -217,7 +225,7 @@ public partial class LikenessWindow : Window
     {
         if (AutoPlaceFront()) Status.Text = "Front markers placed automatically. Check each one and drag any that missed.";
     }
-    protected override void OnClosed(EventArgs e) { _landmarker?.Dispose(); base.OnClosed(e); }
+    protected override void OnClosed(EventArgs e) { _refit.Stop(); _live.Stop(); _landmarker?.Dispose(); base.OnClosed(e); }
     /// <summary>Places one photo marker (pixel coordinates), as dragging it would.</summary>
     public void SetPhotoMarker(bool side, int landmark, Vector2 position)
     {
@@ -280,9 +288,9 @@ public partial class LikenessWindow : Window
     }
 
     // ---- fit ----------------------------------------------------------------------------------------------
-    private void Queue() { _refit.Stop(); _refit.Start(); }
+    private void Queue() { InvalidatePhotoTexture(); _refit.Stop(); _refit.Start(); }
     private void OnSetting(object sender, RoutedPropertyChangedEventArgs<double> e) { if (IsLoaded) Queue(); }
-    private void OnOption(object sender, RoutedEventArgs e) { if (ReferenceEquals(sender, ShowResult)) ShowHeads(); else Queue(); }
+    private void OnOption(object sender, RoutedEventArgs e) { if (ReferenceEquals(sender, ShowResult) || ReferenceEquals(sender, PhotoOverlay)) ShowHeads(); else Queue(); }
 
     /// <summary>How many times the automatic fit is repeated: each pass renders the head as fitted so far, finds its face points again and removes what difference from the photo is left.</summary>
     public static int DensePasses { get; set; } = 2; // measured on reshaped heads: 2 is slightly closer than 1, 4+ drifts when the photo is turned
@@ -382,6 +390,12 @@ public partial class LikenessWindow : Window
 
     private Vector3[][] Compute()
     {
+        var result = ComputeShape();
+        for (int p = 0; p < result.Length; p++) if (_locked[p]) result[p] = _positions[p].ToArray();
+        return result;
+    }
+    private Vector3[][] ComputeShape()
+    {
         int n = FaceFit.Landmarks.Length;
         Vector2?[] Points(PhotoView view) => Enumerable.Range(0, n).Select(i => view.Loaded && view.Markers.TryGetValue(i, out var m) && m.Placed ? (Vector2?)m.Position : null).ToArray();
         _notes.Clear();
@@ -452,7 +466,9 @@ public partial class LikenessWindow : Window
         try
         {
             if (!_frontPhoto.Loaded && !_sidePhoto.Loaded) { Status.Text = "Load at least one photo first."; return; }
-            Result = Compute(); DialogResult = true;
+            var shape = Compute();
+            if (UsePhotoTexture.IsChecked == true) BuildPhotoTexture(shape);
+            Result = shape; TextureResult = UsePhotoTexture.IsChecked == true ? _photoTexture : null; DialogResult = true;
         }
         catch (ArgumentException ex) { Status.Text = ex.Message; }
     }
