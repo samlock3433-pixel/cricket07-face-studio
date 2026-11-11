@@ -154,6 +154,7 @@ public partial class FaceSculptWindow
         _center=null;OnPick(sender,e);
         if(_center is null)return;
         _grabVertices=VertexMode.IsChecked==true?PickVertices(e.GetPosition(Viewport.Viewport)):null; // single vertex instead of the soft brush
+        if(VertexMode.IsChecked==true&&_grabVertices is null)return;
         _pointerStart=e.GetPosition(Viewport);_strokeSource=AllPositions();_strokeRecorded=false;Viewport.CaptureMouse();e.Handled=true;
     }
     private void OnPointerMove(object sender,MouseEventArgs e)
@@ -176,7 +177,7 @@ public partial class FaceSculptWindow
         var displacement=new Vector3((float)world.X,(float)world.Y,(float)world.Z);
         if(_grabVertices is { } vertices){MoveVertices(vertices,displacement);e.Handled=true;Status.Text="Moving one vertex: release to finish. Undo restores it.";return;}
         for(int p=0;p<_parts.Count;p++)
-            SetPositions(p,Core.SculptBrush.Move(_strokeSource[p],center,displacement,(float)(_size*Radius.Value/100),Plane,Floor).Select(v=>new Point3D(v.X,v.Y,v.Z)));
+            if(!Locked(p))SetPositions(p,Core.SculptBrush.Move(_strokeSource[p],center,displacement,(float)(_size*Radius.Value/100),Plane,Floor).Select(v=>new Point3D(v.X,v.Y,v.Z)));
         e.Handled=true;
         Status.Text="Grab sculpt: release to finish. Undo restores the whole stroke.";
     }

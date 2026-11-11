@@ -65,8 +65,15 @@
         <StackPanel>
           <TextBlock TextWrapping="Wrap" Margin="0,0,0,10" Foreground="#333"
             Text="Left drag: sculpt (or paint, with a Texture paint tool below) &#183; Right drag (or Alt + left drag): orbit &#183; add Shift to pan &#183; Wheel or pinch: zoom at the cursor &#183; Arrows: orbit &#183; F: fit &#183; Home: front &#183; Ctrl+Z / Ctrl+Y: undo / redo. View buttons are in the top-right corner of the 3D view."/>
-          <TextBlock Text="Editable mesh part" FontWeight="SemiBold" Margin="0,0,0,5"/>
-          <ComboBox x:Name="PartPicker" SelectionChanged="OnPartChanged" Margin="0,0,0,15"/>
+          <TextBlock Text="Mesh parts" FontWeight="SemiBold" Margin="0,0,0,2"/>
+          <TextBlock TextWrapping="Wrap" Foreground="#555" FontSize="12" Margin="0,0,0,5"
+            Text="Sculpt tools move every part near the brush, so eyes and hair follow the face. Lock a part to keep its shape: locked parts never move (sculpt, grab, single vertex, smooth, hair volume, likeness)."/>
+          <ListBox x:Name="PartPicker" SelectionChanged="OnPartChanged" MaxHeight="150" Margin="0,0,0,5"/>
+          <WrapPanel Margin="0,0,0,15">
+            <Button Content="Lock all except selected" Click="OnLockOthers" Padding="8,3" Margin="0,0,6,0"
+              ToolTip="Only the selected part can change shape."/>
+            <Button Content="Unlock all" Click="OnUnlockAll" Padding="8,3"/>
+          </WrapPanel>
           <TextBlock Text="Local feature sculpt" FontSize="19" FontWeight="SemiBold"/>
           <TextBlock Text="Select the chin, nose, eyelid, cheek, or jaw directly on the mesh." TextWrapping="Wrap" Margin="0,5,0,12"/>
           <TextBlock Text="Brush radius (% of head bounds)"/>

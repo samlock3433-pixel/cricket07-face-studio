@@ -4,9 +4,9 @@ namespace Cricket07.FaceStudio.Core;
 
 /// <summary>
 /// Gives one head the shape of another. All Cricket 07 heads share the face-atlas layout, so a texture position
-/// names the same spot on any head: each target head vertex moves to the source surface drawn at its UV. Parts
-/// that are not head surface (hair, eyeballs, anything the source does not cover) follow a smooth field built from
-/// those moves. The neck blends back to the target's own neck so it still joins the body.
+/// names the same spot on any head: each target head vertex moves to the source surface drawn at its UV. Eyeballs and teeth
+/// go onto the source's own (found by their place in the eye/teeth picture), so the result has the source's eyes. Other
+/// parts that are not head surface (hair, anything the source does not cover) follow a smooth field built from those moves. The neck blends back to the target's own neck so it still joins the body.
 /// Used to put a hair template's hair on a head that has none: the template takes the player's shape.
 /// </summary>
 public static class ShapeTransfer
@@ -21,7 +21,7 @@ public static class ShapeTransfer
     public static Result Transfer(IReadOnlyList<ModelPart> sourceParts, IReadOnlyList<Vector3[]> sourcePositions, IEnumerable<int> sourceFace,
         IReadOnlyList<ModelPart> targetParts, IReadOnlyList<Vector3[]> targetPositions, IEnumerable<int> targetFace, float neckY, float neckBlend)
     {
-        var lookup = new UvLookup(sourceParts, sourcePositions, sourceFace);
+        var lookup = new UvLookup(sourceParts, sourcePositions, sourceFace); targetFace = targetFace.ToArray();
         float Fade(float y) { float t = Math.Clamp((y - neckY) / Math.Max(neckBlend, 1e-4f), 0, 1); return t * t * (3 - 2 * t); }
         var result = targetPositions.Select(p => p.ToArray()).ToArray();
         var moved = new bool[targetPositions.Count][];
@@ -42,13 +42,35 @@ public static class ShapeTransfer
         var keys = controls.Keys.ToArray(); int step = Math.Max(1, keys.Length / 300);
         var sample = keys.Where((_, i) => i % step == 0).ToArray();
         var field = FaceFit.Deformation(sample, sample.Select(k => controls[k]).ToArray(), Array.Empty<Vector3>());
+        // Eyeballs and teeth are the player's own: each of the target's goes onto the source's, found by its place in the
+        // eye/teeth picture. Left and right eyes share one picture, so the copy nearest to where the vertex would go wins.
+        var pictures = lookup.PictureTriangles;
+        var bounds = targetPositions.SelectMany(v => v).Aggregate((Min: new Vector3(float.MaxValue), Max: new Vector3(float.MinValue)), (b, v) => (Vector3.Min(b.Min, v), Vector3.Max(b.Max, v)));
+        float snapReach = Vector3.Distance(bounds.Min, bounds.Max) * 0.015f; // a few eyeball widths: further than that is not the same eye
         int followed = 0;
         for (int p = 0; p < result.Length; p++)
             for (int i = 0; i < result[p].Length; i++)
             {
                 if (moved[p][i]) continue;
                 var original = targetPositions[p][i];
-                result[p][i] = Vector3.Lerp(original, field(original), Fade(original.Y)); followed++;
+                var goes = field(original);
+                if (pictures.Count > 0 && targetFace.Contains(p) && InPictureStrip(targetParts[p].Uvs[i]))
+                {
+                    var uv = targetParts[p].Uvs[i];
+                    var options = pictures.Select(t =>
+                    {
+                        float det = (t.B.Y - t.C.Y) * (t.A.X - t.C.X) + (t.C.X - t.B.X) * (t.A.Y - t.C.Y);
+                        float wa = Math.Max(0, ((t.B.Y - t.C.Y) * (uv.X - t.C.X) + (t.C.X - t.B.X) * (uv.Y - t.C.Y)) / det);
+                        float wb = Math.Max(0, ((t.C.Y - t.A.Y) * (uv.X - t.C.X) + (t.A.X - t.C.X) * (uv.Y - t.C.Y)) / det);
+                        float wc = Math.Max(0, 1 - wa - wb), sum = wa + wb + wc; wa /= sum; wb /= sum; wc /= sum; // outside the triangle: its nearest edge, roughly
+                        return (Miss: Vector2.Distance(t.A * wa + t.B * wb + t.C * wc, uv), Point: t.PA * wa + t.PB * wb + t.PC * wc);
+                    }).ToArray();
+                    // Only a true match counts: the picture really covers this UV and the spot is close to where the vertex was going
+                    // anyway. Some neck and scalp vertices are drawn from the same corner of the atlas; they keep the smooth field.
+                    var match = options.Where(o => o.Miss < 0.002f).Select(o => o.Point).DefaultIfEmpty(new Vector3(float.NaN)).MinBy(o => Vector3.DistanceSquared(o, goes));
+                    if (Vector3.Distance(match, goes) < snapReach) goes = match;
+                }
+                result[p][i] = Vector3.Lerp(original, goes, Fade(original.Y)); followed++;
             }
         return new Result(result, transferred, followed);
     }
@@ -59,6 +81,8 @@ public static class ShapeTransfer
         private const int Grid = 64;
         private readonly List<(Vector2 A, Vector2 B, Vector2 C, Vector3 PA, Vector3 PB, Vector3 PC)> _triangles = new();
         private readonly List<int>[] _cells = Enumerable.Range(0, Grid * Grid).Select(_ => new List<int>()).ToArray();
+        /// <summary>The eyeball and teeth triangles (drawn from the picture strip), kept apart from the head surface.</summary>
+        public List<(Vector2 A, Vector2 B, Vector2 C, Vector3 PA, Vector3 PB, Vector3 PC)> PictureTriangles { get; } = new();
 
         public UvLookup(IReadOnlyList<ModelPart> parts, IReadOnlyList<Vector3[]> positions, IEnumerable<int> faceParts)
         {
@@ -69,8 +93,8 @@ public static class ShapeTransfer
                 {
                     int a = part.Indices[t], b = part.Indices[t + 1], c = part.Indices[t + 2];
                     Vector2 ua = part.Uvs[a], ub = part.Uvs[b], uc = part.Uvs[c];
-                    if (InPictureStrip(ua) && InPictureStrip(ub) && InPictureStrip(uc)) continue;
                     if (Math.Abs((ub.X - ua.X) * (uc.Y - ua.Y) - (uc.X - ua.X) * (ub.Y - ua.Y)) < 1e-12f) continue; // no UV area
+                    if (InPictureStrip(ua) && InPictureStrip(ub) && InPictureStrip(uc)) { PictureTriangles.Add((ua, ub, uc, positions[p][a], positions[p][b], positions[p][c])); continue; }
                     int index = _triangles.Count;
                     _triangles.Add((ua, ub, uc, positions[p][a], positions[p][b], positions[p][c]));
                     var min = Vector2.Min(ua, Vector2.Min(ub, uc)); var max = Vector2.Max(ua, Vector2.Max(ub, uc));

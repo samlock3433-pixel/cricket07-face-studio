@@ -25,6 +25,26 @@ internal static class Program
                 string executable=Path.Combine(studio,"vendor","otools","otools-release-0179","otools.exe");
                 var converter=new OtoolsConverter(executable);
                 string output=Path.Combine(studio,"work","verification-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(output);
+                if(args.Length>2&&args[1]=="probe")
+                {
+                    // probe <texture> [headId] [template]: small parts, their UVs and texture colour; renders from below with and without them.
+                    BitmapSource LoadImg(string path){using var s=File.OpenRead(path);var frame=BitmapDecoder.Create(s,BitmapCreateOptions.PreservePixelFormat,BitmapCacheOption.OnLoad).Frames[0];var c=new FormatConvertedBitmap(frame,PixelFormats.Bgra32,null,0);c.Freeze();return c;}
+                    var head=await StudioModel.OpenAsync(ModelDocument.ContainedPath(templates,$"heads/{(args.Length>3?args[3]:"1188")}/model.o"),converter);
+                    int face=head.Document.Parts.FindIndex(p=>Path.GetFileNameWithoutExtension(p.ImageUri)=="face");
+                    var tex=LoadImg(args[2]);head.Wrap(face,tex);
+                    if(args.Length>4){var probeEditor=new FaceSculptWindow(head);Layout(probeEditor,1280,840);head=await (Task<StudioModel>)typeof(FaceSculptWindow).GetMethod("AddHairAsync",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(probeEditor,new object[]{ModelDocument.ContainedPath(templates,$"heads/{args[4]}/model.o")})!;}
+                    var (px,tw,th)=PixelsOf(tex);
+                    for(int p=0;p<head.Document.Parts.Count;p++)
+                    {
+                        var part=head.Document.Parts[p];Console.WriteLine($"PROBE part {p} {Path.GetFileNameWithoutExtension(part.ImageUri)} verts {part.Positions.Length} tris {part.Indices.Length/3}");
+                        if(part.Positions.Length<=40)for(int i=0;i<part.Positions.Length;i++){var u=part.Uvs[i];int x=Math.Clamp((int)(u.X*tw),0,tw-1),y=Math.Clamp((int)(u.Y*th),0,th-1),o=(y*tw+x)*4;Console.WriteLine($"PROBE   {i} pos {part.Positions[i]} uv {u} colour {px[o+2]},{px[o+1]},{px[o]}");}
+                    }
+                    string dir=Path.Combine(studio,"work","probe");Directory.CreateDirectory(dir);
+                    SavePng(FrontRender(head,0,-40),Path.Combine(dir,"below.png"));SavePng(FrontRender(head,30,-25),Path.Combine(dir,"below-turned.png"));
+                    var keep=((MeshGeometry3D)head.Geometry[1].Geometry).Positions;((MeshGeometry3D)head.Geometry[1].Geometry).Positions=new Point3DCollection();
+                    SavePng(FrontRender(head,0,-40),Path.Combine(dir,"below-without-part1.png"));((MeshGeometry3D)head.Geometry[1].Geometry).Positions=keep;
+                    Console.WriteLine("PROBE saved "+dir);app.Shutdown(0);return;
+                }
                 if(args.Length>3&&args[1]=="likeness")
                 {
                     // Trial on real pictures: likeness <front photo> <face texture> [stock head id]. Saves before/after renders.
@@ -324,6 +344,24 @@ internal static class Program
                     var hairEnd=Mesh(hairPart);
                     if(!(Spread(hairEnd)>Spread(hairStart)*1.005))throw new Exception("Volume + did not make the hair fuller.");
                     if(!faceBefore.SequenceEqual(Mesh(facePart)))throw new Exception("Hair volume changed the face.");
+                    {
+                        // Part locks: a locked hair mesh keeps its shape while a sculpt move at the hairline reshapes the face; undo
+                        // restores the face; with every part locked a move changes nothing and adds no undo step.
+                        var undo=(System.Collections.ICollection)typeof(FaceSculptWindow).GetField("_undo",nav)!.GetValue(hairEditor)!;
+                        var hairLocked=Mesh(hairPart);var faceUnlocked=Mesh(facePart);var top=faceUnlocked.MaxBy(p=>p.Y);
+                        hairEditor.SetLocked(hairPart,true);
+                        typeof(FaceSculptWindow).GetField("_center",nav)!.SetValue(hairEditor,(Vector3?)new Vector3((float)top.X,(float)top.Y-1,(float)top.Z));
+                        Invoke(hairEditor,"OnMove",new Button{Tag="0,1,0"});
+                        if(!hairLocked.SequenceEqual(Mesh(hairPart)))throw new Exception("A locked part moved.");
+                        if(faceUnlocked.SequenceEqual(Mesh(facePart)))throw new Exception("The move did not reshape the unlocked face.");
+                        Invoke(hairEditor,"OnUndo",new Button());
+                        if(!faceUnlocked.SequenceEqual(Mesh(facePart)))throw new Exception("Undo did not restore the face after a move with a locked part.");
+                        for(int p=0;p<hairHead.Geometry.Count;p++)hairEditor.SetLocked(p,true);
+                        int steps=undo.Count;Invoke(hairEditor,"OnMove",new Button{Tag="0,1,0"});
+                        if(!faceUnlocked.SequenceEqual(Mesh(facePart))||!hairLocked.SequenceEqual(Mesh(hairPart))||undo.Count!=steps)throw new Exception("A move with every part locked changed something.");
+                        for(int p=0;p<hairHead.Geometry.Count;p++)hairEditor.SetLocked(p,false);
+                        Console.WriteLine("PASS part locks: locked hair kept its shape, face moved, undo restored, all-locked move did nothing");
+                    }
                     var hairTexture=hairHead.CurrentTexture(hairPart);var (px,w,h)=PixelsOf(hairTexture);
                     var blonde=(byte[])px.Clone();for(int i=0;i<blonde.Length;i+=4)if(blonde[i+3]>0){blonde[i+2]=(byte)Math.Min(255,blonde[i+2]+140);blonde[i+1]=(byte)Math.Min(255,blonde[i+1]+100);blonde[i]=(byte)Math.Min(255,blonde[i]+40);} // a plain blonde tint: the change must survive Save as .big
                     hairHead.Wrap(hairPart,BitmapSource.Create(w,h,96,96,PixelFormats.Bgra32,null,blonde,w*4));
@@ -368,6 +406,21 @@ internal static class Program
                     var sourceMesh=MeshPositions(firstHead);var resultMesh=MeshPositions(withHair);
                     double landmarkGap=FaceFit.Landmarks.Select(l=>Vector3.Distance(FaceFit.AnchorAtUv(firstHead.Document.Parts,FaceParts(firstHead.Document),l.Uv)!.Value.Position(sourceMesh),FaceFit.AnchorAtUv(withHair.Document.Parts,FaceParts(withHair.Document),l.Uv)!.Value.Position(resultMesh))).Max();
                     if(landmarkGap>0.05)throw new Exception($"Add hair: landmarks are {landmarkGap:F3} units from the source head.");
+                    {
+                        // The eyes must be the player's own: every eyeball vertex of the result (eye/teeth picture, front of the face, eye
+                        // height) lies on the source head's eyeballs.
+                        Vector3[] Eyes(StudioModel m,Vector3[][] pos)=>FaceParts(m.Document).SelectMany(p=>pos[p].Where((v,i)=>m.Document.Parts[p].Uvs[i] is var u&&u.Y>0.88f&&u.X<0.32f&&v.Z>4&&Math.Abs(v.Y-101.5f)<1.5f)).ToArray();
+                        var sourceEyes=Eyes(firstHead,sourceMesh);var resultEyes=Eyes(withHair,resultMesh);
+                        double eyeGap=resultEyes.Max(r=>sourceEyes.Min(s=>Vector3.Distance(r,s)));
+                        Console.WriteLine($"ADD HAIR eyeballs: {resultEyes.Length} result vertices, farthest {eyeGap:F3} units from the source eyeballs");
+                        if(resultEyes.Length<8||eyeGap>0.05)throw new Exception($"Add hair: the result's eyeballs are not the source head's ({eyeGap:F3} units off).");
+                        // Nothing else may be torn: no edge of the result is more than 3x its length on the source head (the neck once grew a tent).
+                        var templateDoc=withHair.Document;double worst=0;
+                        foreach(int p in FaceParts(templateDoc))for(int t=0;t+2<templateDoc.Parts[p].Indices.Length;t+=3)for(int e=0;e<3;e++){int a=templateDoc.Parts[p].Indices[t+e],b=templateDoc.Parts[p].Indices[t+(e+1)%3];if(p>=sourceMesh.Length||a>=sourceMesh[p].Length||b>=sourceMesh[p].Length)continue;double before=Vector3.Distance(sourceMesh[p][a],sourceMesh[p][b]),after=Vector3.Distance(resultMesh[p][a],resultMesh[p][b]);if(before>0.05)worst=Math.Max(worst,after/before);}
+                        Console.WriteLine($"ADD HAIR stretch: longest edge is {worst:F2}x its length on the source head");
+                        if(worst>3)throw new Exception($"Add hair: the result is torn (an edge stretched {worst:F1}x).");
+                        SavePreview(withHair,Path.Combine(output,"add-hair.png"));Console.WriteLine("ADD HAIR preview "+Path.Combine(output,"add-hair.png"));
+                    }
                     var sourceTexture=firstHead.CurrentTexture(FaceParts(firstHead.Document)[0]);var resultTexture=withHair.CurrentTexture(FaceParts(withHair.Document)[0]);
                     if(resultTexture.PixelWidth!=sourceTexture.PixelWidth)throw new Exception("Add hair: the face texture was not carried over.");
                     await withHair.ExportAsync(Path.Combine(output,"added-hair"));
@@ -541,6 +594,8 @@ internal static class Program
                             var t=typeof(FaceSculptWindow);
                             var wireBox=(CheckBox)painter.FindName("ShowWireframe");wireBox.IsChecked=true;t.GetMethod("OnWireframe",nav)!.Invoke(painter,new object[]{wireBox,new RoutedEventArgs()});
                             var wire=(HelixToolkit.Wpf.LinesVisual3D)t.GetField("_wire",nav)!.GetValue(painter)!;
+                            t.GetMethod("OnWireframe",nav)!.Invoke(painter,new object[]{wireBox,new RoutedEventArgs()});
+                            if(!ReferenceEquals(wire,t.GetField("_wire",nav)!.GetValue(painter)))throw new Exception("Enabling wireframe twice created a duplicate overlay.");
                             int edges=0;foreach(var g in withHair.Geometry){var tri=((MeshGeometry3D)g.Geometry).TriangleIndices;var set=new HashSet<(int,int)>();for(int k=0;k+2<tri.Count;k+=3)for(int q=0;q<3;q++){int a=tri[k+q],b=tri[k+(q+1)%3];set.Add(a<b?(a,b):(b,a));}edges+=set.Count;}
                             if(wire.Points.Count!=edges*2)throw new Exception($"Wireframe has {wire.Points.Count/2} edges, the mesh {edges}.");
                             var vertexBox=(CheckBox)painter.FindName("VertexMode");vertexBox.IsChecked=true;t.GetMethod("OnVertexMode",nav)!.Invoke(painter,new object[]{vertexBox,new RoutedEventArgs()});
@@ -551,6 +606,13 @@ internal static class Program
                             Point3D[][] Positions()=>withHair.Geometry.Select(g=>((MeshGeometry3D)g.Geometry).Positions.ToArray()).ToArray();
                             var vStart=Positions();
                             t.GetField("_strokeSource",nav)!.SetValue(painter,vStart.Select(p=>p.Select(v=>new Vector3((float)v.X,(float)v.Y,(float)v.Z)).ToArray()).ToArray());
+                            var neckLock=(CheckBox)painter.FindName("LockNeck");
+                            bool? previousNeckLock=neckLock.IsChecked;
+                            neckLock.IsChecked=true;
+                            var neck=vStart.SelectMany((part,p)=>part.Select((v,i)=>(Part:p,Index:i,Position:v))).MinBy(v=>v.Position.Y);
+                            t.GetMethod("MoveVertices",nav)!.Invoke(painter,new object[]{new List<(int Part,int Index,bool Mirror)>{(neck.Part,neck.Index,false)},new Vector3(1,1,1)});
+                            if(Positions()[neck.Part][neck.Index]!=neck.Position)throw new Exception("Single-vertex movement bypassed the neck lock.");
+                            neckLock.IsChecked=previousNeckLock;
                             float step=(float)(withHair.Geometry.Select(g=>g.Bounds.SizeY).Max()*0.02);
                             var shift=new Vector3(step,step*0.5f,0);
                             var listType=picked.GetType();

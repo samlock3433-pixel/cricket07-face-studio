@@ -38,7 +38,16 @@ public partial class FaceSculptWindow : Window
         {
             var visual=_models[m].Geometry[p];
             _parts.Add((_models[m],p,visual));_originalMaterials.Add(visual.Material);group.Children.Add(visual);
-            PartPicker.Items.Add(($"{(m==0?"Primary":"Hair")} · "+_models[m].Document.Parts[p].Name));
+            var docPart=_models[m].Document.Parts[p];
+            string texture=Path.GetFileNameWithoutExtension(docPart.ImageUri)??"";
+            string label=(string.Equals(texture,"hair",StringComparison.OrdinalIgnoreCase)?"Hair":docPart.Positions.Length<64?"Small piece":"Head")
+                +$" · {(texture.Length>0?texture:"no")} texture · {docPart.Positions.Length} points"+(m==0?"":" (hair model)");
+            var lockBox=new CheckBox{Content="Lock",Margin=new Thickness(0,0,10,0),VerticalAlignment=VerticalAlignment.Center,ToolTip="Keep this part's shape: no sculpt tool moves it."};
+            lockBox.Click+=(_,_)=>Status.Text=LockSummary();
+            _locks.Add(lockBox);
+            var row=new StackPanel{Orientation=Orientation.Horizontal,ToolTip=docPart.Name};
+            row.Children.Add(lockBox);row.Children.Add(new TextBlock{Text=label,VerticalAlignment=VerticalAlignment.Center});
+            PartPicker.Items.Add(row);
         }
         _bounds=group.Bounds;_size=Math.Max(_bounds.SizeX,Math.Max(_bounds.SizeY,_bounds.SizeZ));
         if(!double.IsFinite(_size)||_size<=0)throw new InvalidDataException("Empty model bounds.");
@@ -49,6 +58,20 @@ public partial class FaceSculptWindow : Window
     }
 
     private void OnPartChanged(object sender,SelectionChangedEventArgs e){_center=null;}
+
+    // ---- part locks (like a locked layer: the part keeps its shape) ----
+    private readonly List<CheckBox> _locks=new();
+    public bool Locked(int part)=>part<_locks.Count&&_locks[part].IsChecked==true;
+    public void SetLocked(int part,bool locked){_locks[part].IsChecked=locked;Status.Text=LockSummary();}
+    private string LockSummary()
+    {
+        int locked=Enumerable.Range(0,_parts.Count).Count(Locked);
+        return locked==0?"No parts locked: sculpt tools move every part near the brush."
+            :locked==_parts.Count?"Every part is locked: sculpt tools change nothing until you unlock one."
+            :$"{locked} of {_parts.Count} parts locked: they keep their shape while you sculpt.";
+    }
+    private void OnLockOthers(object sender,RoutedEventArgs e){for(int p=0;p<_parts.Count;p++)_locks[p].IsChecked=p!=SelectedPart;Status.Text=LockSummary();}
+    private void OnUnlockAll(object sender,RoutedEventArgs e){foreach(var box in _locks)box.IsChecked=false;Status.Text=LockSummary();}
     private void OnPick(object sender,MouseButtonEventArgs e)
     {
         if(_parts.Count==0||_exporting)return;
@@ -77,9 +100,10 @@ public partial class FaceSculptWindow : Window
     private void Edit(Func<int,Vector3[]?> brush)
     {
         var before=Snapshot();
-        for(int p=0;p<_parts.Count;p++)if(brush(p) is { } positions)SetPositions(p,positions.Select(v=>new Point3D(v.X,v.Y,v.Z)));
+        if(Enumerable.Range(0,_parts.Count).All(Locked)){Status.Text=LockSummary();return;}
+        for(int p=0;p<_parts.Count;p++)if(!Locked(p)&&brush(p) is { } positions)SetPositions(p,positions.Select(v=>new Point3D(v.X,v.Y,v.Z)));
         _undo.Push(new UndoStep(before));_redo.Clear();
-        Status.Text="Sculpt updated. Topology, UVs and skin data remain unchanged.";
+        Status.Text="Sculpt updated."+(Enumerable.Range(0,_parts.Count).Any(Locked)?" Locked parts kept their shape.":" Topology, UVs and skin data remain unchanged.");
     }
     private void SetPositions(int part,IEnumerable<Point3D> positions)
     {

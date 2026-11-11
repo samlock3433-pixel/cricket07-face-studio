@@ -24,6 +24,7 @@ public partial class FaceSculptWindow
     {
         if (ShowWireframe.IsChecked == true)
         {
+            if (_wire is not null) return;
             _edges ??= _parts.Select(p => Edges(((MeshGeometry3D)p.Visual.Geometry).TriangleIndices)).ToArray();
             // Light, slightly see-through lines nudged toward the camera so they sit on the surface without flicker.
             _wire = new LinesVisual3D { Color = Color.FromArgb(190, 120, 225, 255), Thickness = 1, DepthOffset = 1e-4 };
@@ -86,7 +87,9 @@ public partial class FaceSculptWindow
             if (nearest.Distance < _size * 0.02)
                 picked.AddRange(Coincident(((MeshGeometry3D)_parts[nearest.Part].Visual.Geometry).Positions[nearest.Index]).Select(v => (v.Part, v.Index, Mirror: true)));
         }
-        return picked;
+        float? floor = Floor;
+        picked.RemoveAll(v => Locked(v.Part) || (floor is float y && ((MeshGeometry3D)_parts[v.Part].Visual.Geometry).Positions[v.Index].Y <= y));
+        return picked.Count > 0 ? picked : null;
     }
     private IEnumerable<(int Part, int Index)> Coincident(Point3D point)
     {
@@ -101,11 +104,13 @@ public partial class FaceSculptWindow
     private void MoveVertices(List<(int Part, int Index, bool Mirror)> vertices, Vector3 displacement)
     {
         float? plane = Plane;
-        foreach (int part in vertices.Select(v => v.Part).Distinct())
+        float? floor = Floor;
+        foreach (int part in vertices.Select(v => v.Part).Distinct().Where(p => !Locked(p)))
         {
             var positions = _strokeSource![part].ToArray();
             foreach (var v in vertices.Where(v => v.Part == part))
             {
+                if (floor is float y && positions[v.Index].Y <= y) continue;
                 var d = v.Mirror ? new Vector3(-displacement.X, displacement.Y, displacement.Z) : displacement;
                 if (plane is float x && Math.Abs(positions[v.Index].X - x) < _size * 1e-3) d.X = 0; // a centre-line point stays on the centre line
                 positions[v.Index] += d;
