@@ -82,6 +82,7 @@ public partial class FaceSculptWindow
             : HeadPaintTool == PaintTool.Clone && _cloneSource is null ? "Ctrl+click the head where to copy from, then paint where it should go."
             : HeadPaintTool == PaintTool.Paint ? "Left drag paints the colour, keeping the texture's own detail. Alt (or I) takes the colour under the cursor; click the big colour square for any colour. Right drag still orbits; the wheel zooms."
             : painting ? "Left drag on the head works on its texture. Right drag still orbits; the wheel zooms." : "Left drag sculpts again.";
+        SyncTools();
     }
 
     /// <summary>The closest head/hair triangle under a viewport point, or null.</summary>

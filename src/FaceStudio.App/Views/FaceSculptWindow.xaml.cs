@@ -53,7 +53,7 @@ public partial class FaceSculptWindow : Window
         if(!double.IsFinite(_size)||_size<=0)throw new InvalidDataException("Empty model bounds.");
         Viewport.Children.Add(new ModelVisual3D{Content=group});
         PartPicker.SelectedIndex=0;        Viewport.Children.Add(_referencePlane);_referenceReady=true;
-        InitPaint();
+        InitPaint();SyncTools();
         Loaded+=(_,_)=>SetView("front");
     }
 

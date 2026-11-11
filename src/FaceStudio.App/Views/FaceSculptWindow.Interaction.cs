@@ -65,14 +65,14 @@ public partial class FaceSculptWindow
     {
         switch((string)((Button)sender).Tag)
         {
-            case "orbit-left":Navigate(new System.Windows.Vector(-OrbitStep,0),false);break;
-            case "orbit-right":Navigate(new System.Windows.Vector(OrbitStep,0),false);break;
-            case "orbit-up":Navigate(new System.Windows.Vector(0,-OrbitStep),false);break;
-            case "orbit-down":Navigate(new System.Windows.Vector(0,OrbitStep),false);break;
-            case "zoom-in":ZoomAt(ViewportCentre,1.25);break;
-            case "zoom-out":ZoomAt(ViewportCentre,0.8);break;
-            case "focus":FocusFeature();break;
-            case var view:SetView(view);break;
+            case "orbit-left":Smoothly(()=>Navigate(new System.Windows.Vector(-OrbitStep,0),false));break;
+            case "orbit-right":Smoothly(()=>Navigate(new System.Windows.Vector(OrbitStep,0),false));break;
+            case "orbit-up":Smoothly(()=>Navigate(new System.Windows.Vector(0,-OrbitStep),false));break;
+            case "orbit-down":Smoothly(()=>Navigate(new System.Windows.Vector(0,OrbitStep),false));break;
+            case "zoom-in":Smoothly(()=>ZoomAt(ViewportCentre,1.25));break;
+            case "zoom-out":Smoothly(()=>ZoomAt(ViewportCentre,0.8));break;
+            case "focus":Smoothly(FocusFeature);break;
+            case var view:Smoothly(()=>SetView(view),360);break;
         }
     }
     /// <summary>Keyboard navigation while the 3D view has focus; Ctrl+Z / Ctrl+Y anywhere in the window.</summary>
@@ -99,13 +99,13 @@ public partial class FaceSculptWindow
         if(!Viewport.IsKeyboardFocusWithin)return;
         bool shift=modifiers.HasFlag(ModifierKeys.Shift);
         System.Windows.Vector? step=e.Key switch{Key.Left=>new(-1,0),Key.Right=>new(1,0),Key.Up=>new(0,-1),Key.Down=>new(0,1),_=>null};
-        if(step is { } s){Navigate(shift?s*40:s*OrbitStep,shift);e.Handled=true;return;}
+        if(step is { } s){Smoothly(()=>Navigate(shift?s*40:s*OrbitStep,shift),180);e.Handled=true;return;}
         switch(e.Key)
         {
-            case Key.Add or Key.OemPlus:ZoomAt(ViewportCentre,1.25);break;
-            case Key.Subtract or Key.OemMinus:ZoomAt(ViewportCentre,0.8);break;
-            case Key.F:SetView("fit");break;
-            case Key.Home:SetView("front");break;
+            case Key.Add or Key.OemPlus:Smoothly(()=>ZoomAt(ViewportCentre,1.25));break;
+            case Key.Subtract or Key.OemMinus:Smoothly(()=>ZoomAt(ViewportCentre,0.8));break;
+            case Key.F:Smoothly(()=>SetView("fit"),360);break;
+            case Key.Home:Smoothly(()=>SetView("front"),360);break;
             default:return;
         }
         e.Handled=true;
@@ -120,7 +120,7 @@ public partial class FaceSculptWindow
     private void OnPointerDown(object sender,MouseButtonEventArgs e)
     {
         if(_exporting)return;
-        Viewport.Focus();
+        Viewport.Focus();StopCamera(); // a drag takes over from a running view move
         if(ShapePins.IsChecked==true&&e.ChangedButton==MouseButton.Right&&NearestShapePin(e.GetPosition(Viewport)) is int pin&&pin>=0)
         {_selectedShapePin=pin;OnRemoveShapePin(sender,e);e.Handled=true;return;}
         // Orbit: right or middle drag, or Alt + left drag (touchpads). Hold Shift to pan instead.
@@ -228,11 +228,13 @@ public partial class FaceSculptWindow
         if(on)HeadTool.SelectedIndex=0; // moving the photo and painting both use left drag
         Viewport.Cursor=on?Cursors.SizeAll:null;
         Status.Text=on?"Left drag in the 3D view moves the reference photo; the head is not selected or sculpted.":"Sculpting again: click a feature on the head.";
+        SyncTools();
     }
     private void OnCaptureLost(object sender,MouseEventArgs e)=>EndPointer();
     private void OnWheel(object sender,MouseWheelEventArgs e)
     {
-        ZoomAt(e.GetPosition(Viewport),Math.Pow(1.18,e.Delta/120d)); // touchpad pinch arrives as Ctrl+wheel: same zoom
+        var at=e.GetPosition(Viewport);
+        Smoothly(()=>ZoomAt(at,Math.Pow(1.18,e.Delta/120d)),150); // touchpad pinch arrives as Ctrl+wheel: same zoom
         e.Handled=true;
     }
     private void OnProportion(object sender,RoutedEventArgs e)

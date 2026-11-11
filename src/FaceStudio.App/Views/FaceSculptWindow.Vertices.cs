@@ -66,6 +66,7 @@ public partial class FaceSculptWindow
         if (!on) HideVertexMarkers();
         Status.Text = on ? "Single vertex: the dot shows the point under the cursor; left drag moves just that point (its seam copies and, with Mirror, its partner follow). Show wireframe (W) helps."
                          : "Left drag sculpts with the brush radius again.";
+        SyncTools();
     }
 
     /// <summary>

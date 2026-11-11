@@ -35,6 +35,32 @@ internal static class Program
                     await CheckPhotoMaker(studio,output,converter,args);
                     app.Shutdown(0);return;
                 }
+                if(args.Length>1&&args[1]=="startscreen")
+                {
+                    var startWin=new MainWindow{Width=1120,Height=760,WindowStartupLocation=WindowStartupLocation.Manual,Left=20,Top=20};startWin.Show();
+                    await Task.Delay(1500);
+                    var content=(FrameworkElement)startWin.Content;var shot=new RenderTargetBitmap((int)content.ActualWidth,(int)content.ActualHeight,96,96,PixelFormats.Pbgra32);shot.Render(content);
+                    string dir=Path.Combine(studio,"work","probe");Directory.CreateDirectory(dir);SavePng(shot,Path.Combine(dir,"ui-start.png"));Console.WriteLine("UI saved start");
+                    startWin.Close();app.Shutdown(0);return;
+                }
+                if(args.Length>1&&args[1]=="workspace")
+                {
+                    // workspace: shows the editor on screen and saves a screenshot per tool to workprobeI-<tool>.png.
+                    var head=await StudioModel.OpenAsync(ModelDocument.ContainedPath(templates,"heads/6059/model.o"),converter);
+                    var win=new FaceSculptWindow(head){Width=1320,Height=860,WindowStartupLocation=WindowStartupLocation.Manual,Left=20,Top=20};
+                    win.Show();
+                    string dir=Path.Combine(studio,"work","probe");Directory.CreateDirectory(dir);
+                    foreach(var tool in new[]{"sculpt","paint","pinwarp"})
+                    {
+                        win.SelectTool(tool);
+                        await Task.Delay(700);
+                        var content=(FrameworkElement)win.Content;
+                        var shot=new RenderTargetBitmap((int)content.ActualWidth,(int)content.ActualHeight,96,96,PixelFormats.Pbgra32);shot.Render(content);
+                        SavePng(shot,Path.Combine(dir,"ui-"+tool+".png"));Console.WriteLine("UI saved "+tool);
+                    }
+                    typeof(FaceSculptWindow).GetField("_dirty",BindingFlags.Instance|BindingFlags.NonPublic)!.SetValue(win,false);
+                    win.Close();app.Shutdown(0);return;
+                }
                 if(args.Length>2&&args[1]=="probe")
                 {
                     // probe <texture> [headId] [template]: small parts, their UVs and texture colour; renders from below with and without them.

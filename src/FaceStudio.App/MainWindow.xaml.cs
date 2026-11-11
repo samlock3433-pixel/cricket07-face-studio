@@ -38,6 +38,11 @@ public partial class MainWindow : Window
         if(Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)))!=template.Sha256) throw new IOException("Template fingerprint changed. Import the changed .o as your own model instead.");
         return path;
     }
+    /// <summary>Double-clicking a head tile starts with it (only when the click was on a tile and starting is allowed).</summary>
+    private void OnHeadDoubleClick(object sender,System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if(StartButton.IsEnabled&&e.OriginalSource is DependencyObject source&&System.Windows.Controls.ItemsControl.ContainerFromElement(Heads,source) is not null)OnStart(sender,e);
+    }
     private async void OnStart(object sender,RoutedEventArgs e)
     {
         if(Heads.SelectedItem is not Template head)return;

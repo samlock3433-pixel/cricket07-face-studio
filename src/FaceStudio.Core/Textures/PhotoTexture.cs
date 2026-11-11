@@ -141,7 +141,7 @@ public static class PhotoTexture
         var points = source.Distinct().OrderBy(p => p.X).ThenBy(p => p.Y).ToArray(); var hull = new List<Vector2>();
         foreach (var point in points) { while (hull.Count >= 2 && Cross(hull[^1] - hull[^2], point - hull[^1]) <= 0) hull.RemoveAt(hull.Count - 1); hull.Add(point); }
         int lower = hull.Count;
-        foreach (var point in points.Reverse().Skip(1)) { while (hull.Count > lower && Cross(hull[^1] - hull[^2], point - hull[^1]) <= 0) hull.RemoveAt(hull.Count - 1); hull.Add(point); }
+        foreach (var point in points.AsEnumerable().Reverse().Skip(1)) { while (hull.Count > lower && Cross(hull[^1] - hull[^2], point - hull[^1]) <= 0) hull.RemoveAt(hull.Count - 1); hull.Add(point); }
         if (hull.Count < 4) throw new ArgumentException("Photo markers must surround an area of the face.");
         return hull.Take(hull.Count - 1).ToArray();
     }

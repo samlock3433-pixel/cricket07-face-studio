@@ -22,7 +22,7 @@ public partial class FaceSculptWindow
     private void OnPhotoProportionsClosed(object sender, RoutedEventArgs e)
     {
         ShapePins.IsChecked = false;
-        EndShapeDrag(); QueueRedrawPins();
+        EndShapeDrag(); QueueRedrawPins(); SyncTools();
     }
     private void OnShapeMode(object sender, RoutedEventArgs e)
     {
@@ -33,7 +33,7 @@ public partial class FaceSculptWindow
             Status.Text = "Align the reference photo, then click the head to add a shape pin and drag it onto the matching photo feature. Undo restores each drag.";
         }
         else EndShapeDrag();
-        QueueRedrawPins();
+        QueueRedrawPins(); SyncTools();
     }
     private void OnShapeReference(object sender, RoutedEventArgs e)
     {
