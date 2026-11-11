@@ -31,6 +31,7 @@ public partial class FaceSculptWindow
             Viewport.Children.Add(_wire); UpdateWireframe();
         }
         else if (_wire is not null) { Viewport.Children.Remove(_wire); _wire = null; }
+        QueueRedrawPins();
     }
     private static int[] Edges(Int32Collection triangles)
     {
@@ -61,7 +62,7 @@ public partial class FaceSculptWindow
     private void OnVertexMode(object sender, RoutedEventArgs e)
     {
         bool on = VertexMode.IsChecked == true;
-        if (on) { HeadTool.SelectedIndex = 0; ReferenceEdit.IsChecked = false; } // left drag must sculpt
+        if (on) { ShapePins.IsChecked=false;EndShapeDrag();HeadTool.SelectedIndex = 0; ReferenceEdit.IsChecked = false; } // left drag must sculpt
         if (!on) HideVertexMarkers();
         Status.Text = on ? "Single vertex: the dot shows the point under the cursor; left drag moves just that point (its seam copies and, with Mirror, its partner follow). Show wireframe (W) helps."
                          : "Left drag sculpts with the brush radius again.";

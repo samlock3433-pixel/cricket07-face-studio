@@ -25,6 +25,11 @@ internal static class Program
                 string executable=Path.Combine(studio,"vendor","otools","otools-release-0179","otools.exe");
                 var converter=new OtoolsConverter(executable);
                 string output=Path.Combine(studio,"work","verification-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(output);
+                if(args.Length>2&&args[1]=="shape-proportions")
+                {
+                    await CheckShapeProportions(studio,output,converter,args);
+                    app.Shutdown(0);return;
+                }
                 if(args.Length>2&&args[1]=="photo-maker")
                 {
                     await CheckPhotoMaker(studio,output,converter,args);
@@ -656,6 +661,57 @@ internal static class Program
             catch(Exception ex){Console.Error.WriteLine(ex);app.Shutdown(1);}
         };
         app.Run();
+    }
+    private static async Task CheckShapeProportions(string studio,string output,OtoolsConverter converter,string[] args)
+    {
+        string source=args.Length>3?args[3]:Path.Combine(studio,"templates","heads","1188","model.o");
+        var model=await StudioModel.OpenAsync(source,converter);
+        var editor=new FaceSculptWindow(model);Layout(editor,1280,840);
+        var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+        object? Call(string name,params object[] values)=>typeof(FaceSculptWindow).GetMethod(name,flags)!.Invoke(editor,values.Length==0?null:values);
+        Point3D[][] Snapshot()=>model.Geometry.Select(g=>((MeshGeometry3D)g.Geometry).Positions.ToArray()).ToArray();
+        Vector3[][] Vectors()=>Snapshot().Select(p=>p.Select(v=>new Vector3((float)v.X,(float)v.Y,(float)v.Z)).ToArray()).ToArray();
+        using(var input=File.OpenRead(args[2]))((Image)editor.FindName("FrontReference")).Source=BitmapDecoder.Create(input,BitmapCreateOptions.PreservePixelFormat,BitmapCacheOption.OnLoad).Frames[0];
+        ((ComboBox)editor.FindName("ReferenceMode")).SelectedIndex=1;
+        ((Expander)editor.FindName("PhotoProportions")).IsExpanded=true;
+        LayoutContent(editor,1280,840);Call("SetView","front");LayoutContent(editor,1280,840);
+        var before=Snapshot();
+        var face=model.Document.Parts.Select((p,i)=>(p,i)).Where(v=>Path.GetFileNameWithoutExtension(v.p.ImageUri)=="face").Select(v=>v.i).ToArray();
+        Point Pixel(Vector2 uv)
+        {
+            var p=FaceFit.AnchorAtUv(model.Document.Parts,face,uv)!.Value.Position(Vectors());
+            return (Point)Call("Project",new Point3D(p.X,p.Y,p.Z))!;
+        }
+        if(!(bool)Call("BeginShapeDrag",Pixel(new Vector2(.5f,.31f)))!)throw new Exception("Shape hold pin missed the head.");
+        Call("EndShapeDrag");
+        var point=Pixel(new Vector2(.62f,.43f));
+        if(!(bool)Call("BeginShapeDrag",point)!)throw new Exception("Shape drag pin missed the head.");
+        var pins=(List<MeshAnchor>)typeof(FaceSculptWindow).GetField("_shapePins",flags)!.GetValue(editor)!;
+        var held=pins[0].Position(Vectors());
+        Call("DragShapePin",point+new System.Windows.Vector(8,-4));
+        Call("DragShapePin",point+new System.Windows.Vector(12,-6));
+        Call("EndShapeDrag");
+        var moved=Snapshot();
+        if(before.SelectMany(p=>p).SequenceEqual(moved.SelectMany(p=>p)))throw new Exception("Shape pins did not sculpt the model.");
+        if(Vector3.Distance(held,pins[0].Position(Vectors()))>.05f)throw new Exception("Resting shape pin moved too far.");
+        if(model.TextureOverrides.Count!=0)throw new Exception("Shape matching replaced a texture.");
+        Call("OnUndo",editor,new RoutedEventArgs());
+        if(!before.SelectMany(p=>p).SequenceEqual(Snapshot().SelectMany(p=>p)))throw new Exception("One undo did not restore the whole shape-pin drag.");
+        Call("OnRedo",editor,new RoutedEventArgs());
+        if(!moved.SelectMany(p=>p).SequenceEqual(Snapshot().SelectMany(p=>p)))throw new Exception("Redo did not restore the shape-pin drag.");
+        Call("RedrawPins");Call("UpdateWireframe");
+        SaveWindow(editor,Path.Combine(output,"main-photo-proportions.png"),1280,840);
+        string project=Path.Combine(output,"shape.c07face.json");editor.SaveProject(project);
+        Call("OnUndo",editor,new RoutedEventArgs());editor.LoadProject(project);
+        if(!moved.SelectMany(p=>p).SequenceEqual(Snapshot().SelectMany(p=>p)))throw new Exception("Shape project did not restore sculpted positions.");
+        string folder=Path.Combine(output,"export");await model.ExportAsync(folder);
+        string package=Path.Combine(output,"shape-proportions.big");File.WriteAllBytes(package,StudioModel.BuildFacePackage(folder));
+        var reopened=await StudioModel.OpenAsync(package,converter);
+        for(int p=0;p<moved.Length;p++)for(int i=0;i<moved[p].Length;i++)
+            if(Vector3.Distance(new Vector3((float)moved[p][i].X,(float)moved[p][i].Y,(float)moved[p][i].Z),reopened.Document.Parts[p].Positions[i])>.001f)throw new Exception("Shape-pin export lost edited proportions.");
+        if(!File.ReadAllBytes(Path.Combine(model.WorkDirectory,"textures.fsh")).SequenceEqual(File.ReadAllBytes(Path.Combine(reopened.WorkDirectory,"textures.fsh"))))throw new Exception("Photo reference altered the exported face texture.");
+        reopened.DeleteWorkspace();typeof(FaceSculptWindow).GetField("_dirty",flags)!.SetValue(editor,false);editor.Close();
+        Console.WriteLine($"PASS main photo proportions: direct shape pins, held feature, single-drag undo/redo, project reload, .big geometry reopen and byte-identical textures. Output: {output}");
     }
     private static async Task CheckPhotoMaker(string studio,string output,OtoolsConverter converter,string[] args)
     {

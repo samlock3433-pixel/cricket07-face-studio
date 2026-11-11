@@ -12,7 +12,7 @@
       <Button Content="Load project…" Click="OnLoad" Padding="10,6" Margin="0,0,8,0"/>
       <Button Content="Undo" Click="OnUndo" Padding="10,6" Margin="0,0,8,0"/>
       <Button Content="Redo" Click="OnRedo" Padding="10,6" Margin="0,0,8,0"/>
-      <Button Content="Face from photos…" Click="OnLikeness" Padding="10,6" Margin="0,0,8,0" ToolTip="Fit the head with photo markers and build its face texture from front and side photos"/>
+
       <Button Content="Wrap UV texture…" Click="OnTexture" Padding="10,6" Margin="0,0,8,0"/>
       <Button Content="Front reference…" Click="OnReference" Tag="front" Padding="10,6" Margin="0,0,8,0"/>
       <Button Content="Side reference…" Click="OnReference" Tag="side" Padding="10,6"/>
@@ -28,6 +28,7 @@
         <h:SunLight/>
       </h:HelixViewport3D>
       <Canvas x:Name="PinLayer" IsHitTestVisible="False" ClipToBounds="True"/>
+      <Canvas x:Name="ShapePinLayer" IsHitTestVisible="False" ClipToBounds="True"/>
       <!-- Brush ring for texture paint: dark outline under a white line, visible on light and dark skin. -->
       <Canvas x:Name="CursorLayer" IsHitTestVisible="False" ClipToBounds="True">
         <Path x:Name="BrushRingShadow" Stroke="#A0000000" StrokeThickness="3" Visibility="Collapsed" StrokeLineJoin="Round"/>
@@ -85,6 +86,36 @@
           <CheckBox x:Name="VertexMode" Content="Single vertex: left drag moves one point (V)" Click="OnVertexMode" Margin="0,0,0,4"
             ToolTip="For exact likeness on the low-poly head: the dot shows the vertex under the cursor; dragging moves only it (its seam copies and, with Mirror, its partner follow)."/>
           <CheckBox x:Name="ShowWireframe" Content="Show wireframe (W)" Click="OnWireframe" Margin="0,0,0,10"/>
+          <Expander x:Name="PhotoProportions" Header="Match proportions to photo" Expanded="OnPhotoProportionsOpened" Collapsed="OnPhotoProportionsClosed" Margin="0,0,0,12">
+            <StackPanel Margin="0,8,0,0">
+              <TextBlock TextWrapping="Wrap" Text="Align a front or side photo with the wireframe. Click the head to add a shape pin, then drag it onto the photo feature. Other pins hold their spots. Each drag is one undo step."/>
+              <WrapPanel Margin="0,6,0,6">
+                <Button Content="Load front photo…" Tag="front" Click="OnShapeReference" Padding="8,4" Margin="0,0,4,4"/>
+                <Button Content="Load side photo…" Tag="side" Click="OnShapeReference" Padding="8,4" Margin="0,0,4,4"/>
+              </WrapPanel>
+              <CheckBox x:Name="ShapePins" Content="Sculpt with shape pins" Click="OnShapeMode" Margin="0,0,0,6"/>
+              <TextBlock Text="Pin influence (% of head)"/>
+              <Slider x:Name="ShapePinReach" Minimum="5" Maximum="65" Value="35" AutoToolTipPlacement="TopLeft" Margin="0,4,0,6"/>
+              <WrapPanel>
+                <Button Content="Remove selected pin" Click="OnRemoveShapePin" Padding="8,4" Margin="0,0,4,4"/>
+                <Button Content="Clear shape pins" Click="OnClearShapePins" Padding="8,4" Margin="0,0,4,4"/>
+              </WrapPanel>
+              <TextBlock TextWrapping="Wrap" Foreground="#555" FontSize="12" Text="Right-click a pin to remove its handle. Mirror and neck lock above apply to shape moves. Use Move reference only below to align the photo, then enable Sculpt with shape pins to match the nose, jaw, chin and eye spacing."/>
+          <TextBlock Text="Photo alignment" FontSize="19" FontWeight="SemiBold" Margin="0,12,0,6"/>
+          <ComboBox x:Name="ReferenceMode" SelectedIndex="0" SelectionChanged="OnReferenceMode"><ComboBoxItem Content="Hidden"/><ComboBoxItem Content="Front image"/><ComboBoxItem Content="Side image"/></ComboBox>
+          <CheckBox x:Name="ReferenceEdit" Content="Move reference only" Click="OnReferenceEdit" Margin="0,6,0,0"
+            ToolTip="While ticked, left drag in the 3D view moves the reference photo. The head is not selected or sculpted."/>
+          <CheckBox x:Name="ReferenceOverlay" Content="Draw in front of model" IsChecked="True" Checked="OnReferenceOption" Unchecked="OnReferenceOption" Margin="0,4,0,0"/>
+          <TextBlock Text="Opacity"/><Slider x:Name="ReferenceOpacity" Minimum="0" Maximum="1" Value="0.4" ValueChanged="OnReferenceSetting"/>
+          <TextBlock Text="Scale"/><Slider x:Name="ReferenceScale" Minimum="0.2" Maximum="3" Value="1" ValueChanged="OnReferenceSetting"/>
+          <TextBlock Text="Tick 'Move reference only' and drag the photo in the 3D view to line up the eyes and chin; set its size with Scale. Double-click the photo (or its thumbnail below) to crop it; cropping only hides the rest. Choosing Front or Side image switches to that view." TextWrapping="Wrap"/>
+          <TextBlock Text="Front reference" Margin="0,12,0,5" FontWeight="SemiBold"/>
+          <Image x:Name="FrontReference" Height="180" Stretch="Uniform" MouseLeftButtonDown="OnReferenceThumbnail" Cursor="Hand" ToolTip="Double-click to crop"/>
+          <TextBlock Text="Side reference" Margin="0,12,0,5" FontWeight="SemiBold"/>
+          <Image x:Name="SideReference" Height="180" Stretch="Uniform" MouseLeftButtonDown="OnReferenceThumbnail" Cursor="Hand" ToolTip="Double-click to crop"/>
+            </StackPanel>
+          </Expander>
+
           <WrapPanel>
             <Button Content="X −" Tag="-1,0,0" Click="OnMove" Padding="14,6" Margin="0,0,6,6"/>
             <Button Content="X +" Tag="1,0,0" Click="OnMove" Padding="14,6" Margin="0,0,6,6"/>
@@ -137,18 +168,6 @@
           <TextBlock TextWrapping="Wrap" Foreground="#555" Margin="0,4,0,0"
             Text="Pin warp is the way to line a painted moustache, beard edge, lip line or brow up with the head: drag the painted feature onto the right place and a pin stays there (yellow; the dashed line shows where it came from). Click without dragging to pin a spot so it stays put. Pins move only their surroundings and can be dragged again at any time; nothing smears. The brushes paint the texture of whatever you drag over (face or hair). A stroke stops at texture seams. Undo steps back through paint, pins and sculpt alike."/>
 
-          <TextBlock Text="Viewport reference" FontSize="19" FontWeight="SemiBold" Margin="0,12,0,6"/>
-          <ComboBox x:Name="ReferenceMode" SelectedIndex="0" SelectionChanged="OnReferenceMode"><ComboBoxItem Content="Hidden"/><ComboBoxItem Content="Front image"/><ComboBoxItem Content="Side image"/></ComboBox>
-          <CheckBox x:Name="ReferenceEdit" Content="Move reference only" Click="OnReferenceEdit" Margin="0,6,0,0"
-            ToolTip="While ticked, left drag in the 3D view moves the reference photo. The head is not selected or sculpted."/>
-          <CheckBox x:Name="ReferenceOverlay" Content="Draw in front of model" IsChecked="True" Checked="OnReferenceOption" Unchecked="OnReferenceOption" Margin="0,4,0,0"/>
-          <TextBlock Text="Opacity"/><Slider x:Name="ReferenceOpacity" Minimum="0" Maximum="1" Value="0.4" ValueChanged="OnReferenceSetting"/>
-          <TextBlock Text="Scale"/><Slider x:Name="ReferenceScale" Minimum="0.2" Maximum="3" Value="1" ValueChanged="OnReferenceSetting"/>
-          <TextBlock Text="Tick 'Move reference only' and drag the photo in the 3D view to line up the eyes and chin; set its size with Scale. Double-click the photo (or its thumbnail below) to crop it; cropping only hides the rest. Choosing Front or Side image switches to that view." TextWrapping="Wrap"/>
-          <TextBlock Text="Front reference" Margin="0,12,0,5" FontWeight="SemiBold"/>
-          <Image x:Name="FrontReference" Height="180" Stretch="Uniform" MouseLeftButtonDown="OnReferenceThumbnail" Cursor="Hand" ToolTip="Double-click to crop"/>
-          <TextBlock Text="Side reference" Margin="0,12,0,5" FontWeight="SemiBold"/>
-          <Image x:Name="SideReference" Height="180" Stretch="Uniform" MouseLeftButtonDown="OnReferenceThumbnail" Cursor="Hand" ToolTip="Double-click to crop"/>
           <TextBlock Text="Head and hair keep their own mesh parts, UVs and texture bindings. References guide manual sculpting; photos are not automatically projected. Validate exported assets in game before using them in a patch."
                      Foreground="#665544" TextWrapping="Wrap" Margin="0,15,0,0"/>
         </StackPanel>

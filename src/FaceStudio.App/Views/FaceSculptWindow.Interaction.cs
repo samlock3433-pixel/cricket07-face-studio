@@ -121,6 +121,8 @@ public partial class FaceSculptWindow
     {
         if(_exporting)return;
         Viewport.Focus();
+        if(ShapePins.IsChecked==true&&e.ChangedButton==MouseButton.Right&&NearestShapePin(e.GetPosition(Viewport)) is int pin&&pin>=0)
+        {_selectedShapePin=pin;OnRemoveShapePin(sender,e);e.Handled=true;return;}
         // Orbit: right or middle drag, or Alt + left drag (touchpads). Hold Shift to pan instead.
         bool altLeft=e.ChangedButton==MouseButton.Left&&Keyboard.Modifiers.HasFlag(ModifierKeys.Alt);
         if(e.ChangedButton is MouseButton.Middle or MouseButton.Right||altLeft)
@@ -138,6 +140,11 @@ public partial class FaceSculptWindow
         {
             if(_referencePlane.Content is null){Status.Text="Choose Front image or Side image (and load the photo) to move it.";e.Handled=true;return;}
             _referenceDragFrom=e.GetPosition(Viewport);Viewport.CaptureMouse();e.Handled=true;return;
+        }
+        if(ShapePins.IsChecked==true)
+        {
+            if(BeginShapeDrag(e.GetPosition(Viewport)))Viewport.CaptureMouse();
+            e.Handled=true;return;
         }
         // Pin warp: grab a pin or a painted feature and drag it into place.
         if(HeadPins)
@@ -168,6 +175,7 @@ public partial class FaceSculptWindow
             e.Handled=true;return;
         }
         if(_referenceDragFrom is Point from){MoveReference(point-from);_referenceDragFrom=point;e.Handled=true;return;}
+        if(_shapeDrag>=0){DragShapePin(point);e.Handled=true;return;}
         if(_paint is not null){ContinuePaint(e.GetPosition(Viewport.Viewport));e.Handled=true;return;}
         if(_pinDragging){DragPin(e.GetPosition(Viewport.Viewport));e.Handled=true;return;}
         if(_pointerStart is not Point start||_strokeSource is null||_center is not Vector3 center)return;
@@ -198,10 +206,10 @@ public partial class FaceSculptWindow
     }
     private void OnPointerUp(object sender,MouseButtonEventArgs e)
     {
-        if((_orbit&&e.ChangedButton==_navButton)||((_pointerStart is not null||_referenceDragFrom is not null||_paint is not null||_pinDragging)&&e.ChangedButton==MouseButton.Left))
+        if((_orbit&&e.ChangedButton==_navButton)||((_pointerStart is not null||_referenceDragFrom is not null||_paint is not null||_pinDragging||_shapeDrag>=0)&&e.ChangedButton==MouseButton.Left))
         {EndPointer();Viewport.ReleaseMouseCapture();e.Handled=true;}
     }
-    private void EndPointer(){_grabVertices=null;_orbit=false;_pointerStart=null;_strokeSource=null;_referenceDragFrom=null;FinishPaint();EndPin();}
+    private void EndPointer(){EndShapeDrag();_grabVertices=null;_orbit=false;_pointerStart=null;_strokeSource=null;_referenceDragFrom=null;FinishPaint();EndPin();}
     /// <summary>Moves the reference photo by a drag in viewport pixels, in its own plane, so it follows the cursor.</summary>
     private void MoveReference(System.Windows.Vector delta)
     {

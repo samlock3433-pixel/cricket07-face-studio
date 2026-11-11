@@ -209,6 +209,7 @@ public partial class FaceSculptWindow
     }
     private void RedrawPins()
     {
+        RedrawShapePins();
         PinLayer.Children.Clear();
         if (!HeadPins || _pins is not { } s) return;
         var yellow = new SolidColorBrush(Color.FromRgb(255, 210, 40)); var cyan = new SolidColorBrush(Color.FromRgb(60, 220, 255));

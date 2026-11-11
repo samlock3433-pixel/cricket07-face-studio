@@ -73,6 +73,7 @@ public partial class FaceSculptWindow
     {
         if (!_paintReady) return;
         bool painting = HeadPaintTool is not null || HeadPins;
+        if(painting){ShapePins.IsChecked=false;EndShapeDrag();}
         QueueRedrawPins();
         if (painting && ReferenceEdit.IsChecked == true) ReferenceEdit.IsChecked = false;
         Viewport.Cursor = painting ? Cursors.Cross : null;
